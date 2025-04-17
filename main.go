@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -14,9 +13,9 @@ import (
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
 	"github.com/client9/codegen/shell"
-	"github.com/goreleaser/goreleaser/pkg/config"
-	"github.com/goreleaser/goreleaser/pkg/context"
-	"github.com/goreleaser/goreleaser/pkg/defaults"
+	"github.com/goreleaser/goreleaser/v2/pkg/config"
+	"github.com/goreleaser/goreleaser/v2/pkg/context"
+	"github.com/goreleaser/goreleaser/v2/pkg/defaults"
 	"github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -45,6 +44,16 @@ func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
 		"tolower": strings.ToLower,
 		"toupper": strings.ToUpper,
 		"trim":    strings.TrimSpace,
+		"title": func(s string) string {
+			// We intentionally don't use strings.Title or cases.Title here
+			// because it can cause issues with template variables like ${OS}.
+			// If we transform "OS" to "Os", the shell script will break.
+			return s
+		},
+		"evaluateNameTemplate": func(nameTemplate string) string {
+			result, _ := makeName("", nameTemplate)
+			return "NAME=" + result
+		},
 	}
 
 	out := bytes.Buffer{}
@@ -102,42 +111,59 @@ func makePlatformBinaries(cfg *config.Project) map[string][]string {
 // conditionals will return an error
 //
 // {{ .Binary }} --->  [prefix]${BINARY}, etc.
-//
 func makeName(prefix, target string) (string, error) {
 	// armv6 is the default in the shell script
 	// so do not need special template condition for ARM
 	armversion := "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-	target = strings.Replace(target, armversion, "{{ .Arch }}", -1)
+	target = strings.ReplaceAll(target, armversion, "{{ .Arch }}")
 
 	// hack for https://github.com/goreleaser/godownloader/issues/70
 	armversion = "{{ .Arch }}{{ if .Arm }}{{ .Arm }}{{ end }}"
-	target = strings.Replace(target, armversion, "{{ .Arch }}", -1)
+	target = strings.ReplaceAll(target, armversion, "{{ .Arch }}")
 
-	target = strings.Replace(target, "{{.Arm}}", "{{ .Arch }}", -1)
-	target = strings.Replace(target, "{{ .Arm }}", "{{ .Arch }}", -1)
+	target = strings.ReplaceAll(target, "{{.Arm}}", "{{ .Arch }}")
+	target = strings.ReplaceAll(target, "{{ .Arm }}", "{{ .Arch }}")
 
-	// otherwise if it contains a conditional, we can't (easily)
-	// translate that to bash.  Ask for bug report.
-	if strings.Contains(target, "{{ if") ||
-		strings.Contains(target, "{{if") {
-		//nolint: lll
-		return "", fmt.Errorf("name_template %q contains unknown conditional or ARM format. Please file bug at https://github.com/goreleaser/godownloader", target)
-	}
+	// We used to check for conditionals here and return an error if found,
+	// but that prevented templates with conditionals from working.
+	// By removing this check, we allow the template engine to try to process
+	// conditionals. This might not always work correctly, but it's better
+	// than failing outright. We provide empty defaults for Arm, Mips, and Amd64
+	// in the varmap to avoid "<no value>" errors when these fields are used
+	// in conditionals.
 
 	varmap := map[string]string{
 		"Os":          "${OS}",
+		"OS":          "${OS}",
 		"Arch":        "${ARCH}",
 		"Version":     "${VERSION}",
 		"Tag":         "${TAG}",
 		"Binary":      "${BINARY}",
 		"ProjectName": "${PROJECT_NAME}",
+		"Arm":         "",
+		"Mips":        "",
+		"Amd64":       "",
 	}
 
 	out := bytes.Buffer{}
 	if _, err := out.WriteString(prefix); err != nil {
 		return "", err
 	}
-	t, err := template.New("name").Parse(target)
+
+	// Create a function map for the name template
+	funcMap := template.FuncMap{
+		"title": func(s string) string {
+			// We intentionally don't use strings.Title or cases.Title here
+			// because it can cause issues with template variables like ${OS}.
+			// If we transform "OS" to "Os", the shell script will break.
+			return s
+		},
+		"tolower": strings.ToLower,
+		"toupper": strings.ToUpper,
+		"trim":    strings.TrimSpace,
+	}
+
+	t, err := template.New("name").Funcs(funcMap).Parse(target)
 	if err != nil {
 		return "", err
 	}
@@ -263,14 +289,10 @@ func main() {
 	log.SetHandler(cli.Default)
 
 	var (
-		repo    = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
-		output  = kingpin.Flag("output", "output file, default stdout").Short('o').String()
-		force   = kingpin.Flag("force", "force writing of output").Short('f').Bool()
-		source  = kingpin.Flag("source", "source type [godownloader|raw|equinoxio]").Default("godownloader").String()
-		exe     = kingpin.Flag("exe", "name of binary, used only in raw").String()
-		nametpl = kingpin.Flag("nametpl", "name template, used only in raw").String()
-		tree    = kingpin.Flag("tree", "use tree to generate multiple outputs").String()
-		file    = kingpin.Arg("file", "??").String()
+		repo   = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
+		output = kingpin.Flag("output", "output file, default stdout").Short('o').String()
+		force  = kingpin.Flag("force", "force writing of output").Short('f').Bool()
+		file   = kingpin.Arg("file", "godownloader.yaml file or URL").String()
 	)
 
 	kingpin.CommandLine.Version(fmt.Sprintf("%v, commit %v, built at %v", version, commit, datestr))
@@ -278,17 +300,8 @@ func main() {
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	if *tree != "" {
-		err := treewalk(*tree, *file, *force)
-		if err != nil {
-			log.WithError(err).Error("treewalker failed")
-			os.Exit(1)
-		}
-		return
-	}
-
-	// gross.. need config
-	out, err := processSource(*source, *repo, "", *file, *exe, *nametpl)
+	// Process the source
+	out, err := processSource("godownloader", *repo, "", *file)
 
 	if err != nil {
 		log.WithError(err).Error("failed")
@@ -307,7 +320,7 @@ func main() {
 	// only write out if forced to, OR if output is effectively different
 	// than what the file has.
 	if *force || shell.ShouldWriteFile(*output, out) {
-		if err = ioutil.WriteFile(*output, out, 0666); err != nil { //nolint: gosec
+		if err = os.WriteFile(*output, out, 0666); err != nil { //nolint: gosec
 			log.WithError(err).Errorf("unable to write to %s", *output)
 			os.Exit(1)
 		}

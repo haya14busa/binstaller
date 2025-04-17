@@ -1,10 +1,10 @@
-# This is an example goreleaser.yaml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
+# GoReleaser configuration for goinstaller
+# See documentation at http://goreleaser.com
+version: 2
+
 before:
   hooks:
-    # you may remove this if you don't use vgo
     - go mod tidy
-    # you may remove this if you don't need go generate
     - go generate ./...
 builds:
 - env:
@@ -12,15 +12,23 @@ builds:
   goos:
   - linux
   - darwin
+  - windows
   goarch:
   - amd64
+  - arm64
+  main: ./main.go
+  binary: goinstaller
 archives:
-- replacements:
-    darwin: Darwin
-    linux: Linux
-    windows: Windows
-    386: i386
-    amd64: x86_64
+- format: tar.gz
+  name_template: >-
+    {{ .ProjectName }}_
+    {{- title .Os }}_
+    {{- if eq .Arch "amd64" }}x86_64
+    {{- else if eq .Arch "386" }}i386
+    {{- else }}{{ .Arch }}{{ end }}
+  format_overrides:
+  - goos: windows
+    format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -31,3 +39,13 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sig"
+    args: ["sign-blob", "--key=cosign.key", "--output-signature=${signature}", "${artifact}"]
+    artifacts: checksum
+release:
+  github:
+    owner: haya14busa
+    name: goinstaller
+  prerelease: auto

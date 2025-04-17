@@ -1,4 +1,4 @@
-module github.com/goreleaser/godownloader
+module github.com/haya14busa/goinstaller
 
 go 1.13
 

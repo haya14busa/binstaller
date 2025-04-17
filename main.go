@@ -102,7 +102,6 @@ func makePlatformBinaries(cfg *config.Project) map[string][]string {
 // conditionals will return an error
 //
 // {{ .Binary }} --->  [prefix]${BINARY}, etc.
-//
 func makeName(prefix, target string) (string, error) {
 	// armv6 is the default in the shell script
 	// so do not need special template condition for ARM
@@ -263,14 +262,10 @@ func main() {
 	log.SetHandler(cli.Default)
 
 	var (
-		repo    = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
-		output  = kingpin.Flag("output", "output file, default stdout").Short('o').String()
-		force   = kingpin.Flag("force", "force writing of output").Short('f').Bool()
-		source  = kingpin.Flag("source", "source type [godownloader|raw|equinoxio]").Default("godownloader").String()
-		exe     = kingpin.Flag("exe", "name of binary, used only in raw").String()
-		nametpl = kingpin.Flag("nametpl", "name template, used only in raw").String()
-		tree    = kingpin.Flag("tree", "use tree to generate multiple outputs").String()
-		file    = kingpin.Arg("file", "??").String()
+		repo   = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
+		output = kingpin.Flag("output", "output file, default stdout").Short('o').String()
+		force  = kingpin.Flag("force", "force writing of output").Short('f').Bool()
+		file   = kingpin.Arg("file", "Local GoReleaser config file").String()
 	)
 
 	kingpin.CommandLine.Version(fmt.Sprintf("%v, commit %v, built at %v", version, commit, datestr))
@@ -278,17 +273,8 @@ func main() {
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	if *tree != "" {
-		err := treewalk(*tree, *file, *force)
-		if err != nil {
-			log.WithError(err).Error("treewalker failed")
-			os.Exit(1)
-		}
-		return
-	}
-
-	// gross.. need config
-	out, err := processSource(*source, *repo, "", *file, *exe, *nametpl)
+	// Process the source
+	out, err := processSource("godownloader", *repo, "", *file, "", "")
 
 	if err != nil {
 		log.WithError(err).Error("failed")

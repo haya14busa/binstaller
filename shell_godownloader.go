@@ -9,21 +9,29 @@ func processGodownloader(repo, path, filename string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse: %s", err)
 	}
-	// hacky way for when the project has multiple archives.
-	// for now this only handles the first archive.
-	// nolint: godox
-	// TODO: support this once multiple archives is done on goreleaser side.
-	if len(cfg.Archives) > 0 {
-		cfg.Archive = cfg.Archives[0]
+	// We only handle the first archive.
+	if len(cfg.Archives) == 0 {
+		return nil, fmt.Errorf("no archives found in configuration")
 	}
+
+	archive := cfg.Archives[0]
+
 	// get archive name template
-	archName, err := makeName("NAME=", cfg.Archive.NameTemplate)
-	cfg.Archive.NameTemplate = archName
+	archName, err := makeName("NAME=", archive.NameTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("unable generate archive name: %s", err)
 	}
+
+	// Store the modified name template back to the archive
+	archive.NameTemplate = archName
+
 	// get checksum name template
 	checkName, err := makeName("CHECKSUM=", cfg.Checksum.NameTemplate)
+	if err != nil {
+		return nil, fmt.Errorf("unable generate checksum name: %s", err)
+	}
+
+	// Store the modified checksum name template
 	cfg.Checksum.NameTemplate = checkName
 	if err != nil {
 		return nil, fmt.Errorf("unable generate checksum name: %s", err)
@@ -83,7 +91,7 @@ execute() {
   http_download "${tmpdir}/${TARBALL}" "${TARBALL_URL}"
   http_download "${tmpdir}/${CHECKSUM}" "${CHECKSUM_URL}"
   hash_sha256_verify "${tmpdir}/${TARBALL}" "${tmpdir}/${CHECKSUM}"
-  {{- if .Archive.WrapInDirectory }}
+  {{- if (index .Archives 0).WrapInDirectory }}
   srcdir="${tmpdir}/${NAME}"
   rm -rf "${srcdir}"
   {{- else }}
@@ -128,18 +136,18 @@ tag_to_version() {
 }
 adjust_format() {
   # change format (tar.gz or zip) based on OS
-  {{- with .Archive.FormatOverrides }}
+  {{- with (index .Archives 0).FormatOverrides }}
   case ${OS} in
   {{- range . }}
     {{ .Goos }}) FORMAT={{ .Format }} ;;
-	{{- end }}
+ {{- end }}
   esac
   {{- end }}
   true
 }
 adjust_os() {
   # adjust archive name based on OS
-  {{- with .Archive.Replacements }}
+  {{- with (index .Archives 0).Replacements }}
   case ${OS} in
   {{- range $k, $v := . }}
     {{ $k }}) OS={{ $v }} ;;
@@ -150,7 +158,7 @@ adjust_os() {
 }
 adjust_arch() {
   # adjust archive name based on ARCH
-  {{- with .Archive.Replacements }}
+  {{- with (index .Archives 0).Replacements }}
   case ${ARCH} in
   {{- range $k, $v := . }}
     {{ $k }}) ARCH={{ $v }} ;;
@@ -164,7 +172,7 @@ PROJECT_NAME="{{ $.ProjectName }}"
 OWNER={{ $.Release.GitHub.Owner }}
 REPO="{{ $.Release.GitHub.Name }}"
 BINARY={{ (index .Builds 0).Binary }}
-FORMAT={{ .Archive.Format }}
+FORMAT={{ (index .Archives 0).Format }}
 OS=$(uname_os)
 ARCH=$(uname_arch)
 PREFIX="$OWNER/$REPO"
@@ -193,7 +201,7 @@ adjust_arch
 
 log_info "found version: ${VERSION} for ${TAG}/${OS}/${ARCH}"
 
-{{ .Archive.NameTemplate }}
+{{ (index .Archives 0).NameTemplate }}
 TARBALL=${NAME}.${FORMAT}
 TARBALL_URL=${GITHUB_DOWNLOAD}/${TAG}/${TARBALL}
 {{ .Checksum.NameTemplate }}

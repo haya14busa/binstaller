@@ -14,9 +14,9 @@ import (
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/cli"
 	"github.com/client9/codegen/shell"
-	"github.com/goreleaser/goreleaser/pkg/config"
-	"github.com/goreleaser/goreleaser/pkg/context"
-	"github.com/goreleaser/goreleaser/pkg/defaults"
+	"github.com/goreleaser/goreleaser/v2/pkg/config"
+	"github.com/goreleaser/goreleaser/v2/pkg/context"
+	"github.com/goreleaser/goreleaser/v2/pkg/defaults"
 	"github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -262,10 +262,13 @@ func main() {
 	log.SetHandler(cli.Default)
 
 	var (
-		repo   = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
-		output = kingpin.Flag("output", "output file, default stdout").Short('o').String()
-		force  = kingpin.Flag("force", "force writing of output").Short('f').Bool()
-		file   = kingpin.Arg("file", "Local GoReleaser config file").String()
+		repo    = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
+		output  = kingpin.Flag("output", "output file, default stdout").Short('o').String()
+		force   = kingpin.Flag("force", "force writing of output").Short('f').Bool()
+		source  = kingpin.Flag("source", "source type [godownloader]").Default("godownloader").String()
+		exe     = kingpin.Flag("exe", "name of binary, used only in raw").String()
+		nametpl = kingpin.Flag("nametpl", "name template, used only in raw").String()
+		file    = kingpin.Arg("file", "godownloader.yaml file or URL").String()
 	)
 
 	kingpin.CommandLine.Version(fmt.Sprintf("%v, commit %v, built at %v", version, commit, datestr))
@@ -274,7 +277,7 @@ func main() {
 	kingpin.Parse()
 
 	// Process the source
-	out, err := processSource("godownloader", *repo, "", *file, "", "")
+	out, err := processSource(*source, *repo, "", *file, *exe, *nametpl)
 
 	if err != nil {
 		log.WithError(err).Error("failed")

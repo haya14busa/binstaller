@@ -125,3 +125,10 @@ func TestGhSetupE2E(t *testing.T) {
 func TestSigspyE2E(t *testing.T) {
 	testInstallScript(t, "actionutils/sigspy", "sigspy", "--help")
 }
+
+// TestGolangciLintE2E tests that the goinstaller tool can generate a working
+// installation script for the golangci/golangci-lint repository and that the script
+// can successfully install the golangci-lint binary.
+func TestGolangciLintE2E(t *testing.T) {
+	testInstallScript(t, "golangci/golangci-lint", "golangci-lint", "--version")
+}

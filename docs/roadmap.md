@@ -1,18 +1,18 @@
 ---
-title: "GoDownloader Fork Implementation Roadmap"
+title: "goinstaller Implementation Roadmap"
 date: "2025-04-17"
 author: "haya14busa"
 version: "0.1.0"
 status: "draft"
 ---
 
-# GoDownloader Fork Implementation Roadmap
+# goinstaller Implementation Roadmap
 
-This document outlines the implementation plan for the GoDownloader fork, providing a roadmap for development and prioritization of features.
+This document outlines the implementation plan for the goinstaller project, providing a roadmap for development and prioritization of features.
 
 ## Project Phases
 
-The implementation of the GoDownloader fork is divided into several phases, each with specific goals and deliverables.
+The implementation of the goinstaller project is divided into several phases, each with specific goals and deliverables.
 
 ```mermaid
 flowchart TD
@@ -63,23 +63,23 @@ The first phase focuses on establishing a solid foundation for the project by cl
 
 ### Goals
 
-- [ ] Fork the repository and set up the development environment
-- [ ] Remove unnecessary features (Equinox.io support, raw GitHub releases, tree walking)
+- [x] Fork the repository and set up the development environment
+- [x] Remove unnecessary features (Equinox.io support, raw GitHub releases, tree walking)
 - [ ] Update dependencies to their latest versions
-- [ ] Refactor the code structure for better maintainability
+- [x] Refactor the code structure for better maintainability
 
 ### Tasks
 
 1. **Fork Repository & Initial Setup**
-   - [ ] Create the new repository
+   - [x] Create the new repository
    - [ ] Set up CI/CD pipelines
-   - [ ] Update README and documentation to reflect the fork
+   - [x] Update README and documentation to reflect the fork
 
 2. **Remove Unnecessary Features**
-   - [ ] Remove Equinox.io support
-   - [ ] Remove raw GitHub releases support
-   - [ ] Remove tree walking functionality
-   - [ ] Clean up related code and tests
+   - [x] Remove Equinox.io support
+   - [x] Remove raw GitHub releases support
+   - [x] Remove tree walking functionality
+   - [x] Clean up related code and tests
 
 3. **Update Dependencies**
    - [ ] Update Go dependencies to latest versions
@@ -87,17 +87,17 @@ The first phase focuses on establishing a solid foundation for the project by cl
    - [ ] Fix any compatibility issues
 
 4. **Refactor Code Structure**
-   - [ ] Reorganize code into logical packages
-   - [ ] Improve error handling
-   - [ ] Enhance logging
-   - [ ] Implement better configuration management
+   - [x] Reorganize code into logical packages
+   - [x] Improve error handling
+   - [x] Enhance logging
+   - [x] Implement better configuration management
 
 ### Deliverables
 
-- [ ] Clean, streamlined codebase
+- [x] Clean, streamlined codebase
 - [ ] Updated dependencies
-- [ ] Improved code structure
-- [ ] Basic documentation
+- [x] Improved code structure
+- [x] Basic documentation
 
 ## Phase 2: Core Features
 
@@ -199,8 +199,8 @@ The final phase focuses on refining the project and preparing for the first stab
 
 ## Milestones
 
-- [ ] **Initial Fork**: Repository forked and initial cleanup completed
-- [ ] **Feature Removal**: Unnecessary features removed
+- [x] **Initial Fork**: Repository forked and initial cleanup completed
+- [x] **Feature Removal**: Unnecessary features removed
 - [ ] **Basic Attestation**: Basic GitHub attestation verification implemented
 - [ ] **Advanced Attestation**: Advanced attestation features implemented
 - [ ] **First Stable Release**: v1.0.0 released
@@ -211,9 +211,9 @@ Features are prioritized based on their importance and complexity:
 
 ### High Priority (Must Have)
 
-- [ ] GoReleaser YAML parsing
-- [ ] Shell script generation
-- [ ] Checksum verification
+- [x] GoReleaser YAML parsing
+- [x] Shell script generation
+- [x] Checksum verification
 - [ ] Basic GitHub attestation verification
 
 ### Medium Priority (Should Have)
@@ -251,12 +251,12 @@ The project will be considered successful when:
 
 - [ ] All high-priority features are implemented
 - [ ] Test coverage is at least 80%
-- [ ] Documentation is complete and accurate
+- [x] Documentation is complete and accurate
 - [ ] The first stable release is published
 - [ ] Users can successfully generate and use installation scripts with attestation verification
 
 ## Conclusion
 
-This roadmap provides a structured approach to implementing the GoDownloader fork. By following this plan, the project will deliver a streamlined, security-enhanced tool for generating installation scripts for Go binaries.
+This roadmap provides a structured approach to implementing the goinstaller project. By following this plan, the project will deliver a streamlined, security-enhanced tool for generating installation scripts for Go binaries.
 
 The roadmap is subject to adjustment as development progresses and new requirements or challenges emerge. Regular reviews will be conducted to ensure the project remains on track and aligned with its goals.

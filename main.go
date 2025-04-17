@@ -51,6 +51,7 @@ func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
 			// If we transform "OS" to "Os", the shell script will break.
 			return s
 		},
+		"contains": strings.Contains,
 		"evaluateNameTemplate": func(nameTemplate string) string {
 			result, _ := makeName("", nameTemplate)
 			return "NAME=" + result

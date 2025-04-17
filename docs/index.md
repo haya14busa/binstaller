@@ -1,18 +1,18 @@
 ---
-title: "GoDownloader Fork Documentation Index"
+title: "goinstaller Documentation Index"
 date: "2025-04-17"
 author: "haya14busa"
 version: "0.1.0"
 status: "draft"
 ---
 
-# GoDownloader Fork Documentation Index
+# goinstaller Documentation Index
 
-Welcome to the documentation for the GoDownloader fork. This index provides an overview of all available documentation to help you navigate the project.
+Welcome to the documentation for goinstaller. This index provides an overview of all available documentation to help you navigate the project.
 
 ## Overview
 
-The GoDownloader fork is a streamlined version of the original [GoDownloader](https://github.com/goreleaser/godownloader) project, with enhanced security features including GitHub attestation verification. It generates shell scripts for downloading and installing Go binaries from GitHub releases.
+goinstaller is a streamlined version of the original [GoDownloader](https://github.com/goreleaser/godownloader) project, with enhanced security features including GitHub attestation verification. It generates shell scripts for downloading and installing Go binaries from GitHub releases.
 
 ## Documentation Sections
 
@@ -29,7 +29,7 @@ The GoDownloader fork is a streamlined version of the original [GoDownloader](ht
 
 ### Security
 
-- [**Security Considerations**](security.md) - Security aspects of the GoDownloader fork
+- [**Security Considerations**](security.md) - Security aspects of goinstaller
 
 ### Project Information
 
@@ -75,17 +75,17 @@ graph TD
 
 ```bash
 # Install the latest version
-go install github.com/haya14busa/godownloader@latest
+go install github.com/haya14busa/goinstaller@latest
 ```
 
 ### Basic Usage
 
 ```bash
 # Generate an installation script for a GitHub repository
-godownloader --repo=owner/repo > install.sh
+goinstaller --repo=owner/repo > install.sh
 
 # Generate an installation script with attestation verification
-godownloader --repo=owner/repo --require-attestation > install.sh
+goinstaller --repo=owner/repo --require-attestation > install.sh
 ```
 
 ### Key Features

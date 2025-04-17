@@ -1,20 +1,20 @@
 ---
-title: "GoDownloader Fork Documentation"
+title: "goinstaller Documentation"
 date: "2025-04-17"
 author: "haya14busa"
 version: "0.1.0"
 status: "draft"
 ---
 
-# GoDownloader Fork
+# goinstaller
 
-> A streamlined fork of GoDownloader with enhanced security features
+> A streamlined installer for Go binaries with enhanced security features
 
 ## Overview
 
 This project is a fork of [GoDownloader](https://github.com/goreleaser/godownloader), which was originally created as a companion tool to [GoReleaser](https://github.com/goreleaser/goreleaser). GoDownloader generates shell scripts that can download the right package and version of Go binaries released with GoReleaser, making it easy for users to install Go applications with a simple curl | bash command.
 
-The original project has been archived since January 2022, but the core functionality remains valuable. This fork aims to streamline the codebase by removing unnecessary features, enhance security with GitHub attestation verification, and focus on maintainability and stability.
+The original project has been archived since January 2022, but the core functionality remains valuable. goinstaller streamlines the codebase by removing unnecessary features, enhances security with GitHub attestation verification, and focuses on maintainability and stability.
 
 ## Key Features
 
@@ -22,7 +22,7 @@ The original project has been archived since January 2022, but the core function
 - **GoReleaser Integration**: Parse GoReleaser configuration files to understand the structure of releases
 - **Cross-Platform Support**: Support various operating systems and architectures
 - **Checksum Verification**: Verify checksums of downloaded binaries
-- **GitHub Attestation Verification**: Verify GitHub attestations to enhance security (new feature)
+- **GitHub Attestation Verification**: Verify GitHub attestations to enhance security
 
 ## Getting Started
 
@@ -30,23 +30,23 @@ The original project has been archived since January 2022, but the core function
 
 ```bash
 # Install the latest version
-go install github.com/haya14busa/godownloader@latest
+go install github.com/haya14busa/goinstaller@latest
 
 # Or install a specific version
-go install github.com/haya14busa/godownloader@v0.1.0
+go install github.com/haya14busa/goinstaller@v0.1.0
 ```
 
 ### Basic Usage
 
 ```bash
 # Generate an installation script for a GitHub repository
-godownloader --repo=owner/repo > install.sh
+goinstaller --repo=owner/repo > install.sh
 
 # Generate an installation script from a local GoReleaser config
-godownloader --file=.goreleaser.yml > install.sh
+goinstaller --file=.goreleaser.yml > install.sh
 
 # Generate an installation script with attestation verification
-godownloader --repo=owner/repo --require-attestation > install.sh
+goinstaller --repo=owner/repo --require-attestation > install.sh
 ```
 
 ### Example
@@ -55,7 +55,7 @@ For a project using GoReleaser, you can generate an installation script and add 
 
 ```bash
 # Generate the installation script
-godownloader --repo=your-username/your-project > install.sh
+goinstaller --repo=your-username/your-project > install.sh
 
 # Make it executable
 chmod +x install.sh
@@ -82,10 +82,10 @@ For more detailed documentation, see:
 
 ## Comparison with Original GoDownloader
 
-This fork differs from the original GoDownloader in several ways:
+goinstaller differs from the original GoDownloader in several ways:
 
-| Feature | Original GoDownloader | This Fork |
-|---------|----------------------|-----------|
+| Feature | Original GoDownloader | goinstaller |
+|---------|----------------------|------------|
 | GoReleaser YAML Parsing | ✅ | ✅ |
 | Shell Script Generation | ✅ | ✅ |
 | Checksum Verification | ✅ | ✅ |

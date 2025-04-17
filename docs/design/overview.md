@@ -1,12 +1,12 @@
 ---
-title: "GoDownloader Fork Design Overview"
+title: "goinstaller Design Overview"
 date: "2025-04-17"
 author: "haya14busa"
 version: "0.1.0"
 status: "draft"
 ---
 
-# GoDownloader Fork Design Overview
+# goinstaller Design Overview
 
 ## Background
 
@@ -14,9 +14,9 @@ status: "draft"
 
 The original project has been archived since January 2022 (see [issue #161](https://github.com/goreleaser/godownloader/issues/161)) due to maintenance constraints and a suggestion to potentially merge this functionality into GoReleaser itself. However, the core functionality of generating installation scripts remains valuable for many projects.
 
-## Vision for the Fork
+## Vision for goinstaller
 
-This fork aims to:
+goinstaller aims to:
 
 1. Streamline the codebase by removing unnecessary features
 2. Enhance security with GitHub attestation verification
@@ -27,7 +27,7 @@ This fork aims to:
 
 ```mermaid
 flowchart TD
-    A[GoReleaser YAML] --> B[GoDownloader]
+    A[GoReleaser YAML] --> B[goinstaller]
     B --> C[Shell Script Generator]
     C --> D[Installation Script]
     D --> E[End User]
@@ -49,7 +49,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[GoReleaser YAML] --> B[GoDownloader]
+    A[GoReleaser YAML] --> B[goinstaller]
     B --> C[Shell Script Generator]
     C --> D[Installation Script]
     D --> E[End User]
@@ -72,12 +72,12 @@ flowchart TD
 
 ### Code Structure
 
-The fork will maintain a similar structure to the original project but with some simplifications:
+The project will have a clean, modular structure:
 
 ```
-godownloader/
+goinstaller/
 ├── cmd/
-│   └── godownloader/
+│   └── goinstaller/
 │       └── main.go
 ├── internal/
 │   ├── config/
@@ -158,4 +158,4 @@ The shell script template will be simplified to focus on the core functionality:
 
 ## Conclusion
 
-This fork of GoDownloader will provide a focused, security-enhanced tool for generating installation scripts for Go binaries. By removing unnecessary features and adding GitHub attestation verification, it will be easier to maintain and provide better security guarantees for users.
+goinstaller provides a focused, security-enhanced tool for generating installation scripts for Go binaries. By removing unnecessary features and adding GitHub attestation verification, it is easier to maintain and provides better security guarantees for users.

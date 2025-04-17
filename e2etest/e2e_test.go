@@ -17,7 +17,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("Failed to create temp directory: " + err.Error())
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			panic("Failed to remove temp directory: " + err.Error())
+		}
+	}()
 
 	// Build the goinstaller tool to a temporary location
 	goinstallerPath = filepath.Join(tempDir, "goinstaller")

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -24,7 +25,11 @@ func TestMain(m *testing.M) {
 	}()
 
 	// Build the goinstaller tool to a temporary location
-	goinstallerPath = filepath.Join(tempDir, "goinstaller")
+	execName := "goinstaller"
+	if runtime.GOOS == "windows" {
+		execName += ".exe"
+	}
+	goinstallerPath = filepath.Join(tempDir, execName)
 	cmd := exec.Command("go", "build", "-o", goinstallerPath)
 	cmd.Dir = ".." // Go up one level to reach the root directory
 	if err := cmd.Run(); err != nil {
@@ -65,7 +70,12 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	// Run the installation script
 	var stderr bytes.Buffer
 	var installStdout bytes.Buffer
-	installCmd := exec.Command("sh", installerPath, "-b", binDir, "-d")
+	var installCmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		installCmd = exec.Command("powershell", "-Command", installerPath, "-b", binDir, "-d")
+	} else {
+		installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d")
+	}
 	installCmd.Stderr = &stderr
 	installCmd.Stdout = &installStdout
 	if err := installCmd.Run(); err != nil {
@@ -73,9 +83,13 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	}
 
 	// Check that the binary was installed
-	binaryPath := filepath.Join(binDir, binaryName)
+	binName := binaryName
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	binaryPath := filepath.Join(binDir, binName)
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		t.Fatalf("%s binary was not installed at %s", binaryName, binaryPath)
+		t.Fatalf("%s binary was not installed at %s", binName, binaryPath)
 	}
 
 	// Check that the binary works

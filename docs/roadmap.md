@@ -65,14 +65,14 @@ The first phase focuses on establishing a solid foundation for the project by cl
 
 - [x] Fork the repository and set up the development environment
 - [x] Remove unnecessary features (Equinox.io support, raw GitHub releases, tree walking)
-- [ ] Update dependencies to their latest versions
+- [x] Update dependencies to their latest versions
 - [x] Refactor the code structure for better maintainability
 
 ### Tasks
 
 1. **Fork Repository & Initial Setup**
    - [x] Create the new repository
-   - [ ] Set up CI/CD pipelines
+   - [x] Set up CI/CD pipelines
    - [x] Update README and documentation to reflect the fork
 
 2. **Remove Unnecessary Features**
@@ -82,9 +82,9 @@ The first phase focuses on establishing a solid foundation for the project by cl
    - [x] Clean up related code and tests
 
 3. **Update Dependencies**
-   - [ ] Update Go dependencies to latest versions
-   - [ ] Replace deprecated libraries
-   - [ ] Fix any compatibility issues
+   - [x] Update Go dependencies to latest versions
+   - [x] Replace deprecated libraries
+   - [x] Fix any compatibility issues
 
 4. **Refactor Code Structure**
    - [x] Reorganize code into logical packages
@@ -95,7 +95,7 @@ The first phase focuses on establishing a solid foundation for the project by cl
 ### Deliverables
 
 - [x] Clean, streamlined codebase
-- [ ] Updated dependencies
+- [x] Updated dependencies
 - [x] Improved code structure
 - [x] Basic documentation
 
@@ -201,6 +201,7 @@ The final phase focuses on refining the project and preparing for the first stab
 
 - [x] **Initial Fork**: Repository forked and initial cleanup completed
 - [x] **Feature Removal**: Unnecessary features removed
+- [x] **Phase 1 Completion**: Foundation phase completed with all dependencies updated
 - [ ] **Basic Attestation**: Basic GitHub attestation verification implemented
 - [ ] **Advanced Attestation**: Advanced attestation features implemented
 - [ ] **First Stable Release**: v1.0.0 released

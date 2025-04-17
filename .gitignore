@@ -1,8 +1,10 @@
 bin/
 godownloader
+goinstaller
 vendor/
 shlib/
 tmp/
 dist/
 treeout
 coverage.txt
+.vscode/

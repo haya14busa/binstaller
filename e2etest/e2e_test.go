@@ -72,6 +72,7 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	var installStdout bytes.Buffer
 	var installCmd *exec.Cmd
 	if runtime.GOOS == "windows" {
+		// FIXME: Windows support is still a work in progress
 		// On Windows, we need to use the & operator to execute the script
 		installCmd = exec.Command("powershell", "-Command", "& '"+installerPath+"' -b '"+binDir+"' -d")
 	} else {

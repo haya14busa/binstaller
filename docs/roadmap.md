@@ -15,177 +15,195 @@ This document outlines the implementation plan for the GoDownloader fork, provid
 The implementation of the GoDownloader fork is divided into several phases, each with specific goals and deliverables.
 
 ```mermaid
-gantt
-    title GoDownloader Fork Implementation Roadmap
-    dateFormat  YYYY-MM-DD
-    section Phase 1
-    Fork Repository & Initial Cleanup           :a1, 2025-04-20, 7d
-    Remove Unnecessary Features                 :a2, after a1, 7d
-    Update Dependencies                         :a3, after a1, 3d
-    Refactor Code Structure                     :a4, after a2, 7d
-    section Phase 2
-    GitHub Attestation Basic Implementation     :b1, after a4, 14d
-    Shell Script Template Updates               :b2, after a4, 7d
-    Testing Framework Setup                     :b3, after a4, 5d
-    section Phase 3
-    Advanced Attestation Features               :c1, after b1, 14d
-    Documentation Updates                       :c2, after b2, 7d
-    Comprehensive Testing                       :c3, after b3, 10d
-    section Phase 4
-    Performance Optimizations                   :d1, after c1, 7d
-    User Experience Improvements                :d2, after c2, 7d
-    First Stable Release                        :milestone, after d2, 0d
+flowchart TD
+    subgraph Phase1["Phase 1: Foundation"]
+        A1[Fork Repository & Initial Cleanup]
+        A2[Remove Unnecessary Features]
+        A3[Update Dependencies]
+        A4[Refactor Code Structure]
+        A1 --> A2
+        A1 --> A3
+        A2 --> A4
+    end
+    
+    subgraph Phase2["Phase 2: Core Features"]
+        B1[GitHub Attestation Basic Implementation]
+        B2[Shell Script Template Updates]
+        B3[Testing Framework Setup]
+        A4 --> B1
+        A4 --> B2
+        A4 --> B3
+    end
+    
+    subgraph Phase3["Phase 3: Enhancement"]
+        C1[Advanced Attestation Features]
+        C2[Documentation Updates]
+        C3[Comprehensive Testing]
+        B1 --> C1
+        B2 --> C2
+        B3 --> C3
+    end
+    
+    subgraph Phase4["Phase 4: Refinement"]
+        D1[Performance Optimizations]
+        D2[User Experience Improvements]
+        D3[Release Preparation]
+        C1 --> D1
+        C2 --> D2
+        C3 --> D3
+        D1 --> E[First Stable Release]
+        D2 --> E
+        D3 --> E
+    end
 ```
 
-## Phase 1: Foundation (Weeks 1-3)
+## Phase 1: Foundation
 
 The first phase focuses on establishing a solid foundation for the project by cleaning up the codebase and removing unnecessary features.
 
 ### Goals
 
-- Fork the repository and set up the development environment
-- Remove unnecessary features (Equinox.io support, raw GitHub releases, tree walking)
-- Update dependencies to their latest versions
-- Refactor the code structure for better maintainability
+- [ ] Fork the repository and set up the development environment
+- [ ] Remove unnecessary features (Equinox.io support, raw GitHub releases, tree walking)
+- [ ] Update dependencies to their latest versions
+- [ ] Refactor the code structure for better maintainability
 
 ### Tasks
 
 1. **Fork Repository & Initial Setup**
-   - Create the new repository
-   - Set up CI/CD pipelines
-   - Update README and documentation to reflect the fork
+   - [ ] Create the new repository
+   - [ ] Set up CI/CD pipelines
+   - [ ] Update README and documentation to reflect the fork
 
 2. **Remove Unnecessary Features**
-   - Remove Equinox.io support
-   - Remove raw GitHub releases support
-   - Remove tree walking functionality
-   - Clean up related code and tests
+   - [ ] Remove Equinox.io support
+   - [ ] Remove raw GitHub releases support
+   - [ ] Remove tree walking functionality
+   - [ ] Clean up related code and tests
 
 3. **Update Dependencies**
-   - Update Go dependencies to latest versions
-   - Replace deprecated libraries
-   - Fix any compatibility issues
+   - [ ] Update Go dependencies to latest versions
+   - [ ] Replace deprecated libraries
+   - [ ] Fix any compatibility issues
 
 4. **Refactor Code Structure**
-   - Reorganize code into logical packages
-   - Improve error handling
-   - Enhance logging
-   - Implement better configuration management
+   - [ ] Reorganize code into logical packages
+   - [ ] Improve error handling
+   - [ ] Enhance logging
+   - [ ] Implement better configuration management
 
 ### Deliverables
 
-- Clean, streamlined codebase
-- Updated dependencies
-- Improved code structure
-- Basic documentation
+- [ ] Clean, streamlined codebase
+- [ ] Updated dependencies
+- [ ] Improved code structure
+- [ ] Basic documentation
 
-## Phase 2: Core Features (Weeks 4-6)
+## Phase 2: Core Features
 
 The second phase focuses on implementing the core features of the fork, particularly the GitHub attestation verification.
 
 ### Goals
 
-- Implement basic GitHub attestation verification
-- Update shell script templates
-- Set up a comprehensive testing framework
+- [ ] Implement basic GitHub attestation verification
+- [ ] Update shell script templates
+- [ ] Set up a comprehensive testing framework
 
 ### Tasks
 
 1. **GitHub Attestation Basic Implementation**
-   - Implement attestation fetching
-   - Implement basic verification logic
-   - Add configuration options for attestation verification
+   - [ ] Implement attestation fetching
+   - [ ] Implement basic verification logic
+   - [ ] Add configuration options for attestation verification
 
 2. **Shell Script Template Updates**
-   - Update templates to include attestation verification
-   - Improve error handling in scripts
-   - Enhance user feedback during installation
+   - [ ] Update templates to include attestation verification
+   - [ ] Improve error handling in scripts
+   - [ ] Enhance user feedback during installation
 
 3. **Testing Framework Setup**
-   - Set up unit testing framework
-   - Implement integration tests
-   - Create test fixtures for different scenarios
+   - [ ] Set up unit testing framework
+   - [ ] Implement integration tests
+   - [ ] Create test fixtures for different scenarios
 
 ### Deliverables
 
-- Basic GitHub attestation verification functionality
-- Updated shell script templates
-- Comprehensive testing framework
+- [ ] Basic GitHub attestation verification functionality
+- [ ] Updated shell script templates
+- [ ] Comprehensive testing framework
 
-## Phase 3: Enhancement (Weeks 7-9)
+## Phase 3: Enhancement
 
 The third phase focuses on enhancing the core features and improving the overall quality of the project.
 
 ### Goals
 
-- Implement advanced attestation features
-- Complete comprehensive documentation
-- Expand test coverage
+- [ ] Implement advanced attestation features
+- [ ] Complete comprehensive documentation
+- [ ] Expand test coverage
 
 ### Tasks
 
 1. **Advanced Attestation Features**
-   - Implement custom verification policies
-   - Add support for multiple attestation types
-   - Implement fallback verification mechanisms
+   - [ ] Implement custom verification policies
+   - [ ] Add support for multiple attestation types
+   - [ ] Implement fallback verification mechanisms
 
 2. **Documentation Updates**
-   - Complete user documentation
-   - Create developer documentation
-   - Add examples and tutorials
+   - [ ] Complete user documentation
+   - [ ] Create developer documentation
+   - [ ] Add examples and tutorials
 
 3. **Comprehensive Testing**
-   - Expand test coverage
-   - Implement end-to-end tests
-   - Add performance benchmarks
+   - [ ] Expand test coverage
+   - [ ] Implement end-to-end tests
+   - [ ] Add performance benchmarks
 
 ### Deliverables
 
-- Advanced attestation verification features
-- Complete documentation
-- Comprehensive test suite
+- [ ] Advanced attestation verification features
+- [ ] Complete documentation
+- [ ] Comprehensive test suite
 
-## Phase 4: Refinement (Weeks 10-11)
+## Phase 4: Refinement
 
 The final phase focuses on refining the project and preparing for the first stable release.
 
 ### Goals
 
-- Optimize performance
-- Improve user experience
-- Prepare for the first stable release
+- [ ] Optimize performance
+- [ ] Improve user experience
+- [ ] Prepare for the first stable release
 
 ### Tasks
 
 1. **Performance Optimizations**
-   - Optimize resource usage
-   - Improve execution speed
-   - Reduce memory footprint
+   - [ ] Optimize resource usage
+   - [ ] Improve execution speed
+   - [ ] Reduce memory footprint
 
 2. **User Experience Improvements**
-   - Enhance error messages
-   - Improve command-line interface
-   - Add progress indicators
+   - [ ] Enhance error messages
+   - [ ] Improve command-line interface
+   - [ ] Add progress indicators
 
 3. **Release Preparation**
-   - Final testing and bug fixes
-   - Version tagging
-   - Release notes preparation
+   - [ ] Final testing and bug fixes
+   - [ ] Version tagging
+   - [ ] Release notes preparation
 
 ### Deliverables
 
-- Optimized, user-friendly application
-- First stable release (v1.0.0)
+- [ ] Optimized, user-friendly application
+- [ ] First stable release (v1.0.0)
 
 ## Milestones
 
-| Milestone | Description | Target Date |
-|-----------|-------------|-------------|
-| Initial Fork | Repository forked and initial cleanup completed | Week 1 |
-| Feature Removal | Unnecessary features removed | Week 3 |
-| Basic Attestation | Basic GitHub attestation verification implemented | Week 6 |
-| Advanced Attestation | Advanced attestation features implemented | Week 9 |
-| First Stable Release | v1.0.0 released | Week 11 |
+- [ ] **Initial Fork**: Repository forked and initial cleanup completed
+- [ ] **Feature Removal**: Unnecessary features removed
+- [ ] **Basic Attestation**: Basic GitHub attestation verification implemented
+- [ ] **Advanced Attestation**: Advanced attestation features implemented
+- [ ] **First Stable Release**: v1.0.0 released
 
 ## Feature Prioritization
 
@@ -193,22 +211,22 @@ Features are prioritized based on their importance and complexity:
 
 ### High Priority (Must Have)
 
-- GoReleaser YAML parsing
-- Shell script generation
-- Checksum verification
-- Basic GitHub attestation verification
+- [ ] GoReleaser YAML parsing
+- [ ] Shell script generation
+- [ ] Checksum verification
+- [ ] Basic GitHub attestation verification
 
 ### Medium Priority (Should Have)
 
-- Advanced attestation features
-- Improved error handling
-- Enhanced user feedback
+- [ ] Advanced attestation features
+- [ ] Improved error handling
+- [ ] Enhanced user feedback
 
 ### Low Priority (Nice to Have)
 
-- Custom verification policies
-- Multiple attestation types
-- Performance optimizations
+- [ ] Custom verification policies
+- [ ] Multiple attestation types
+- [ ] Performance optimizations
 
 ## Resource Allocation
 
@@ -231,11 +249,11 @@ The project will be implemented with the following resource allocation:
 
 The project will be considered successful when:
 
-1. All high-priority features are implemented
-2. Test coverage is at least 80%
-3. Documentation is complete and accurate
-4. The first stable release is published
-5. Users can successfully generate and use installation scripts with attestation verification
+- [ ] All high-priority features are implemented
+- [ ] Test coverage is at least 80%
+- [ ] Documentation is complete and accurate
+- [ ] The first stable release is published
+- [ ] Users can successfully generate and use installation scripts with attestation verification
 
 ## Conclusion
 

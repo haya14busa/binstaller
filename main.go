@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -186,6 +187,59 @@ func normalizeRepo(repo string) string {
 	return repo
 }
 
+// getDefaultBranch gets the default branch for a GitHub repository.
+// If it fails, it returns "master" as a fallback.
+func getDefaultBranch(repo string) string {
+	url := fmt.Sprintf("https://api.github.com/repos/%s", repo)
+	log.Infof("getting default branch for %s", repo)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Warnf("failed to create request for %s: %v", repo, err)
+		return "master"
+	}
+
+	// Use GITHUB_TOKEN if available to avoid rate limiting
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "token "+token)
+		log.Infof("using GITHUB_TOKEN for API request")
+	}
+
+	// nolint: gosec
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Warnf("failed to get default branch for %s: %v", repo, err)
+		return "master"
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Warnf("failed to close response body: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Warnf("failed to get default branch for %s: %d %s", repo, resp.StatusCode, http.StatusText(resp.StatusCode))
+		return "master"
+	}
+
+	var repoInfo struct {
+		DefaultBranch string `json:"default_branch"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&repoInfo); err != nil {
+		log.Warnf("failed to decode response for %s: %v", repo, err)
+		return "master"
+	}
+
+	if repoInfo.DefaultBranch == "" {
+		log.Warnf("default branch for %s is empty, using master", repo)
+		return "master"
+	}
+
+	log.Infof("default branch for %s is %s", repo, repoInfo.DefaultBranch)
+	return repoInfo.DefaultBranch
+}
+
 func loadURLs(path, configPath string) (*config.Project, error) {
 	for _, file := range []string{configPath, "goreleaser.yml", ".goreleaser.yml", "goreleaser.yaml", ".goreleaser.yaml"} {
 		if file == "" {
@@ -237,8 +291,9 @@ func Load(repo, configPath, file string) (project *config.Project, err error) {
 	if file == "" {
 		repo = normalizeRepo(repo)
 		log.Infof("reading repo %q on github", repo)
+		defaultBranch := getDefaultBranch(repo)
 		project, err = loadURLs(
-			fmt.Sprintf("https://raw.githubusercontent.com/%s/master", repo),
+			fmt.Sprintf("https://raw.githubusercontent.com/%s/%s", repo, defaultBranch),
 			configPath,
 		)
 	} else {

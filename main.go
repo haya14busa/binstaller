@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -106,14 +105,14 @@ func makeName(prefix, target string) (string, error) {
 	// armv6 is the default in the shell script
 	// so do not need special template condition for ARM
 	armversion := "{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-	target = strings.Replace(target, armversion, "{{ .Arch }}", -1)
+	target = strings.ReplaceAll(target, armversion, "{{ .Arch }}")
 
 	// hack for https://github.com/goreleaser/godownloader/issues/70
 	armversion = "{{ .Arch }}{{ if .Arm }}{{ .Arm }}{{ end }}"
-	target = strings.Replace(target, armversion, "{{ .Arch }}", -1)
+	target = strings.ReplaceAll(target, armversion, "{{ .Arch }}")
 
-	target = strings.Replace(target, "{{.Arm}}", "{{ .Arch }}", -1)
-	target = strings.Replace(target, "{{ .Arm }}", "{{ .Arch }}", -1)
+	target = strings.ReplaceAll(target, "{{.Arm}}", "{{ .Arch }}")
+	target = strings.ReplaceAll(target, "{{ .Arm }}", "{{ .Arch }}")
 
 	// otherwise if it contains a conditional, we can't (easily)
 	// translate that to bash.  Ask for bug report.
@@ -296,7 +295,7 @@ func main() {
 	// only write out if forced to, OR if output is effectively different
 	// than what the file has.
 	if *force || shell.ShouldWriteFile(*output, out) {
-		if err = ioutil.WriteFile(*output, out, 0666); err != nil { //nolint: gosec
+		if err = os.WriteFile(*output, out, 0666); err != nil { //nolint: gosec
 			log.WithError(err).Errorf("unable to write to %s", *output)
 			os.Exit(1)
 		}

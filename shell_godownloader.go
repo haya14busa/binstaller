@@ -139,7 +139,11 @@ adjust_format() {
   {{- with (index .Archives 0).FormatOverrides }}
   case ${OS} in
   {{- range . }}
+    {{- if .Format }}
     {{ .Goos }}) FORMAT={{ .Format }} ;;
+    {{- else if .Formats }}
+    {{ .Goos }}) FORMAT={{ index .Formats 0 }} ;;
+    {{- end }}
  {{- end }}
   esac
   {{- end }}
@@ -147,19 +151,35 @@ adjust_format() {
 }
 adjust_os() {
   # adjust archive name based on OS
+  {{- if or (contains (index .Archives 0).NameTemplate "title .Os") (contains (index .Archives 0).NameTemplate "title .OS") }}
+  # This archive uses title case for OS names
   case ${OS} in
     darwin) OS=Darwin ;;
     linux) OS=Linux ;;
     windows) OS=Windows ;;
   esac
+  {{- else }}
+  # This archive uses lowercase OS names
+  # No need to adjust OS names
+  {{- end }}
   true
 }
 adjust_arch() {
-  # adjust archive name based on ARCH
+  # adjust archive name based on ARCH and whether the template uses x86_64
+  {{- if contains (index .Archives 0).NameTemplate "x86_64" }}
+  # This archive uses x86_64 for amd64
   case ${ARCH} in
     amd64) ARCH=x86_64 ;;
     386) ARCH=i386 ;;
   esac
+  {{- else if contains (index .Archives 0).NameTemplate "i386" }}
+  # This archive uses i386 for 386
+  case ${ARCH} in
+    386) ARCH=i386 ;;
+  esac
+  {{- else }}
+  # No need to adjust ARCH names
+  {{- end }}
   true
 }
 ` + shellfn + `
@@ -168,9 +188,6 @@ OWNER={{ $.Release.GitHub.Owner }}
 REPO="{{ $.Release.GitHub.Name }}"
 BINARY={{ (index .Builds 0).Binary }}
 FORMAT=tar.gz
-case ${OS} in
-  windows) FORMAT=zip ;;
-esac
 OS=$(uname_os)
 ARCH=$(uname_arch)
 PREFIX="$OWNER/$REPO"
@@ -198,12 +215,12 @@ adjust_os
 adjust_arch
 
 log_info "found version: ${VERSION} for ${TAG}/${OS}/${ARCH}"
-
 {{ evaluateNameTemplate (index .Archives 0).NameTemplate }}
 TARBALL=${NAME}.${FORMAT}
 TARBALL_URL=${GITHUB_DOWNLOAD}/${TAG}/${TARBALL}
 {{ .Checksum.NameTemplate }}
 CHECKSUM_URL=${GITHUB_DOWNLOAD}/${TAG}/${CHECKSUM}
+
 
 
 execute

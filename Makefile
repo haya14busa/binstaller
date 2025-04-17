@@ -12,7 +12,6 @@ export GOPROXY = https://proxy.golang.org
 setup: ## Install all the build and lint dependencies
 	mkdir -p bin
 	curl -sfL https://install.goreleaser.com/github.com/goreleaser/goreleaser.sh | sh
-	curl -sfL https://install.goreleaser.com/github.com/gohugoio/hugo.sh | sh
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
 ifeq ($(OS), Darwin)
 	curl -sfL -o ./bin/shellcheck https://github.com/caarlos0/shellcheck-docker/releases/download/v0.4.6/shellcheck_darwin
@@ -44,20 +43,16 @@ ci: build lint test  ## travis-ci entrypoint
 	git diff .
 	./bin/goreleaser --snapshot --rm-dist
 
-build: hooks ## Build a beta version of goreleaser
+build: hooks ## Build a beta version of goinstaller
 	go build
-	./scripts/build-site.sh
 
 .DEFAULT_GOAL := build
 
-generate: ## regenerate shell code from client9/shlib
-	./makeshellfn.sh > shellfn.go
-
-.PHONY: ci help generate clean
+.PHONY: ci help clean
 
 clean: ## clean up everything
 	go clean ./...
-	rm -f godownloader
+	rm -f goinstaller
 	rm -rf ./bin ./dist ./vendor
 	git gc --aggressive
 
@@ -68,4 +63,3 @@ hooks:
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-

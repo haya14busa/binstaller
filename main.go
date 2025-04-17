@@ -45,7 +45,10 @@ func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
 		"toupper": strings.ToUpper,
 		"trim":    strings.TrimSpace,
 		"title": func(s string) string {
-			return strings.Title(s)
+			// We intentionally don't use strings.Title or cases.Title here
+			// because it can cause issues with template variables like ${OS}.
+			// If we transform "OS" to "Os", the shell script will break.
+			return s
 		},
 		"evaluateNameTemplate": func(nameTemplate string) string {
 			result, _ := makeName("", nameTemplate)
@@ -131,6 +134,7 @@ func makeName(prefix, target string) (string, error) {
 
 	varmap := map[string]string{
 		"Os":          "${OS}",
+		"OS":          "${OS}",
 		"Arch":        "${ARCH}",
 		"Version":     "${VERSION}",
 		"Tag":         "${TAG}",
@@ -149,7 +153,10 @@ func makeName(prefix, target string) (string, error) {
 	// Create a function map for the name template
 	funcMap := template.FuncMap{
 		"title": func(s string) string {
-			return strings.Title(s)
+			// We intentionally don't use strings.Title or cases.Title here
+			// because it can cause issues with template variables like ${OS}.
+			// If we transform "OS" to "Os", the shell script will break.
+			return s
 		},
 		"tolower": strings.ToLower,
 		"toupper": strings.ToUpper,

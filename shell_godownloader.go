@@ -17,22 +17,22 @@ func processGodownloader(repo, path, filename string) ([]byte, error) {
 	archive := cfg.Archives[0]
 
 	// get archive name template
-	archName, err := makeName("NAME=", archive.NameTemplate)
+	archName, err := makeName("", archive.NameTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("unable generate archive name: %s", err)
 	}
 
 	// Store the modified name template back to the archive
-	archive.NameTemplate = archName
+	archive.NameTemplate = "NAME=" + archName
 
 	// get checksum name template
-	checkName, err := makeName("CHECKSUM=", cfg.Checksum.NameTemplate)
+	checkName, err := makeName("", cfg.Checksum.NameTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("unable generate checksum name: %s", err)
 	}
 
 	// Store the modified checksum name template
-	cfg.Checksum.NameTemplate = checkName
+	cfg.Checksum.NameTemplate = "CHECKSUM=" + checkName
 	if err != nil {
 		return nil, fmt.Errorf("unable generate checksum name: %s", err)
 	}
@@ -147,24 +147,19 @@ adjust_format() {
 }
 adjust_os() {
   # adjust archive name based on OS
-  {{- with (index .Archives 0).Replacements }}
   case ${OS} in
-  {{- range $k, $v := . }}
-    {{ $k }}) OS={{ $v }} ;;
-  {{- end }}
+    darwin) OS=Darwin ;;
+    linux) OS=Linux ;;
+    windows) OS=Windows ;;
   esac
-  {{- end }}
   true
 }
 adjust_arch() {
   # adjust archive name based on ARCH
-  {{- with (index .Archives 0).Replacements }}
   case ${ARCH} in
-  {{- range $k, $v := . }}
-    {{ $k }}) ARCH={{ $v }} ;;
-  {{- end }}
+    amd64) ARCH=x86_64 ;;
+    386) ARCH=i386 ;;
   esac
-  {{- end }}
   true
 }
 ` + shellfn + `
@@ -172,7 +167,10 @@ PROJECT_NAME="{{ $.ProjectName }}"
 OWNER={{ $.Release.GitHub.Owner }}
 REPO="{{ $.Release.GitHub.Name }}"
 BINARY={{ (index .Builds 0).Binary }}
-FORMAT={{ (index .Archives 0).Format }}
+FORMAT=tar.gz
+case ${OS} in
+  windows) FORMAT=zip ;;
+esac
 OS=$(uname_os)
 ARCH=$(uname_arch)
 PREFIX="$OWNER/$REPO"
@@ -201,7 +199,7 @@ adjust_arch
 
 log_info "found version: ${VERSION} for ${TAG}/${OS}/${ARCH}"
 
-{{ (index .Archives 0).NameTemplate }}
+{{ evaluateNameTemplate (index .Archives 0).NameTemplate }}
 TARBALL=${NAME}.${FORMAT}
 TARBALL_URL=${GITHUB_DOWNLOAD}/${TAG}/${TARBALL}
 {{ .Checksum.NameTemplate }}

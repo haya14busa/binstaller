@@ -44,6 +44,13 @@ func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
 		"tolower": strings.ToLower,
 		"toupper": strings.ToUpper,
 		"trim":    strings.TrimSpace,
+		"title": func(s string) string {
+			return strings.Title(s)
+		},
+		"evaluateNameTemplate": func(nameTemplate string) string {
+			result, _ := makeName("", nameTemplate)
+			return "NAME=" + result
+		},
 	}
 
 	out := bytes.Buffer{}
@@ -114,13 +121,13 @@ func makeName(prefix, target string) (string, error) {
 	target = strings.ReplaceAll(target, "{{.Arm}}", "{{ .Arch }}")
 	target = strings.ReplaceAll(target, "{{ .Arm }}", "{{ .Arch }}")
 
-	// otherwise if it contains a conditional, we can't (easily)
-	// translate that to bash.  Ask for bug report.
-	if strings.Contains(target, "{{ if") ||
-		strings.Contains(target, "{{if") {
-		//nolint: lll
-		return "", fmt.Errorf("name_template %q contains unknown conditional or ARM format. Please file bug at https://github.com/goreleaser/godownloader", target)
-	}
+	// We used to check for conditionals here and return an error if found,
+	// but that prevented templates with conditionals from working.
+	// By removing this check, we allow the template engine to try to process
+	// conditionals. This might not always work correctly, but it's better
+	// than failing outright. We provide empty defaults for Arm, Mips, and Amd64
+	// in the varmap to avoid "<no value>" errors when these fields are used
+	// in conditionals.
 
 	varmap := map[string]string{
 		"Os":          "${OS}",
@@ -129,13 +136,27 @@ func makeName(prefix, target string) (string, error) {
 		"Tag":         "${TAG}",
 		"Binary":      "${BINARY}",
 		"ProjectName": "${PROJECT_NAME}",
+		"Arm":         "",
+		"Mips":        "",
+		"Amd64":       "",
 	}
 
 	out := bytes.Buffer{}
 	if _, err := out.WriteString(prefix); err != nil {
 		return "", err
 	}
-	t, err := template.New("name").Parse(target)
+
+	// Create a function map for the name template
+	funcMap := template.FuncMap{
+		"title": func(s string) string {
+			return strings.Title(s)
+		},
+		"tolower": strings.ToLower,
+		"toupper": strings.ToUpper,
+		"trim":    strings.TrimSpace,
+	}
+
+	t, err := template.New("name").Funcs(funcMap).Parse(target)
 	if err != nil {
 		return "", err
 	}

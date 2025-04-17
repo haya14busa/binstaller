@@ -19,7 +19,7 @@ func TestReviewdogE2E(t *testing.T) {
 	// Build the goinstaller tool to a temporary location
 	goinstallerPath := filepath.Join(tempDir, "goinstaller")
 	cmd := exec.Command("go", "build", "-o", goinstallerPath)
-	cmd.Dir = "../.." // Go up two levels to reach the root directory
+	cmd.Dir = ".." // Go up one level to reach the root directory
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to build goinstaller: %v", err)
 	}

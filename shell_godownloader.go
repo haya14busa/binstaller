@@ -165,11 +165,21 @@ adjust_os() {
   true
 }
 adjust_arch() {
-  # adjust archive name based on ARCH
+  # adjust archive name based on ARCH and whether the template uses x86_64
+  {{- if contains (index .Archives 0).NameTemplate "x86_64" }}
+  # This archive uses x86_64 for amd64
   case ${ARCH} in
     amd64) ARCH=x86_64 ;;
     386) ARCH=i386 ;;
   esac
+  {{- else if contains (index .Archives 0).NameTemplate "i386" }}
+  # This archive uses i386 for 386
+  case ${ARCH} in
+    386) ARCH=i386 ;;
+  esac
+  {{- else }}
+  # No need to adjust ARCH names
+  {{- end }}
   true
 }
 ` + shellfn + `

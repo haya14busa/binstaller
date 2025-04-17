@@ -14,7 +14,7 @@ bin/goreleaser:
 
 bin/golangci-lint:
 	mkdir -p bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b ./bin v1.23.8
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b ./bin v2.1.2
 
 bin/shellcheck:
 	mkdir -p bin
@@ -42,14 +42,12 @@ fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 
 lint: bin/golangci-lint ## Run all the linters
-	./bin/golangci-lint run ./... || echo "Linting failed, but continuing..."
+	./bin/golangci-lint run ./...
 
-precommit: lint  ## Run precommit hook
-
-ci: build test ## travis-ci entrypoint
+ci: build test lint ## travis-ci entrypoint
 	git diff .
 
-build: hooks ## Build a beta version of goinstaller
+build: ## Build a beta version of goinstaller
 	go build
 
 .DEFAULT_GOAL := build
@@ -61,10 +59,6 @@ clean: ## clean up everything
 	rm -f goinstaller
 	rm -rf ./bin ./dist ./vendor
 	git gc --aggressive
-
-hooks:
-	echo "make lint" > .git/hooks/pre-commit
-	chmod +x .git/hooks/pre-commit
 
 # Absolutely awesome: http://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 help:

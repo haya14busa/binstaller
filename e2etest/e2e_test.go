@@ -50,7 +50,7 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	// Generate the installation script for the repository
 	installerPath := filepath.Join(tempDir, binaryName+"-install.sh")
 	var stdout bytes.Buffer
-	generateCmd := exec.Command(goinstallerPath, "--repo="+repo)
+	generateCmd := exec.Command(goinstallerPath, "--repo="+repo, "--enable-gh-attestation")
 	generateCmd.Stdout = &stdout
 	if err := generateCmd.Run(); err != nil {
 		t.Fatalf("Failed to generate installation script: %v", err)

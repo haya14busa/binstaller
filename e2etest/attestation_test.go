@@ -134,7 +134,7 @@ func TestSkipAttestationWithSigspy(t *testing.T) {
 	binDir := createBinDir(t)
 
 	// Run the installation script with attestation verification skipped
-	output, err := runInstallScript(t, installerPath, binDir, "-s")
+	output, err := runInstallScript(t, installerPath, binDir)
 
 	// This should succeed since we're skipping attestation verification
 	if err != nil {

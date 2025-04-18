@@ -398,18 +398,26 @@ func getVersion() string {
 
 // loadFromGitHub loads a project configuration from a GitHub repository
 // and returns the project and source information.
-func loadFromGitHub(repo, configPath, version string) (*config.Project, string, error) {
+func loadFromGitHub(repo, configPath, version, specifiedCommitHash string) (*config.Project, string, error) {
 	repo = normalizeRepo(repo)
 	log.Infof("reading repo %q on github", repo)
 
-	// Get the default branch
-	defaultBranch := getDefaultBranch(repo)
+	var commitHash string
+	if specifiedCommitHash != "" {
+		// Use the specified commit hash
+		commitHash = specifiedCommitHash
+		log.Infof("using specified commit hash: %s", commitHash)
+	} else {
+		// Get the default branch
+		defaultBranch := getDefaultBranch(repo)
 
-	// Try to get the commit hash for the default branch
-	commitHash, err := getLatestCommitSHA(repo, defaultBranch)
-	if err != nil {
-		log.Warnf("failed to get commit hash for %s: %v", repo, err)
-		commitHash = defaultBranch // Fallback to using the branch name
+		// Try to get the commit hash for the default branch
+		var err error
+		commitHash, err = getLatestCommitSHA(repo, defaultBranch)
+		if err != nil {
+			log.Warnf("failed to get commit hash for %s: %v", repo, err)
+			commitHash = defaultBranch // Fallback to using the branch name
+		}
 	}
 
 	// Determine the actual config file path that was used
@@ -660,7 +668,7 @@ func loadFile(file string) (*config.Project, error) {
 
 // Load project configuration from a given repo name or filepath/url.
 // Returns the project configuration and source information.
-func Load(repo, configPath, file string) (project *config.Project, sourceInfo string, err error) {
+func Load(repo, configPath, file, commitHash string) (project *config.Project, sourceInfo string, err error) {
 	if repo == "" && file == "" {
 		return nil, "", fmt.Errorf("repo or file not specified")
 	}
@@ -671,7 +679,7 @@ func Load(repo, configPath, file string) (project *config.Project, sourceInfo st
 	// Load the project configuration
 	if file == "" {
 		// GitHub repository
-		project, sourceInfo, err = loadFromGitHub(repo, configPath, ver)
+		project, sourceInfo, err = loadFromGitHub(repo, configPath, ver, commitHash)
 	} else {
 		// Local file
 		project, sourceInfo, err = loadFromFile(file, ver)
@@ -723,6 +731,7 @@ func main() {
 		repo                     = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
 		output                   = kingpin.Flag("output", "output file, default stdout").Short('o').String()
 		force                    = kingpin.Flag("force", "force writing of output").Short('f').Bool()
+		commitHash               = kingpin.Flag("commit", "specific commit hash to use for GitHub repository").String()
 		enableGHAttestation      = kingpin.Flag("enable-gh-attestation", "enable GitHub attestation verification").Bool()
 		requireAttestation       = kingpin.Flag("require-attestation", "require attestation verification").Bool()
 		ghAttestationVerifyFlags = kingpin.Flag("gh-attestation-verify-flags", "additional flags to pass to gh attestation verify").String()
@@ -748,7 +757,7 @@ func main() {
 	}
 
 	// Process the source
-	out, err := processSource("godownloader", *repo, "", *file, attestationOpts)
+	out, err := processSource("godownloader", *repo, "", *file, attestationOpts, *commitHash)
 
 	if err != nil {
 		log.WithError(err).Error("failed")

@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func processGodownloader(repo, path, filename string, attestationOpts AttestationOptions) ([]byte, error) {
-	cfg, sourceInfo, err := Load(repo, path, filename)
+func processGodownloader(repo, path, filename string, attestationOpts AttestationOptions, commitHash string) ([]byte, error) {
+	cfg, sourceInfo, err := Load(repo, path, filename, commitHash)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse: %s", err)
 	}

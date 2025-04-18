@@ -26,7 +26,10 @@ jobs:
       - name: Build
         run: make ci
         env:
+          # GITHUB_TOKEN is needed for goinstaller execution
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GH_TOKEN is needed for gh attestation verify in the generated installer script
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5

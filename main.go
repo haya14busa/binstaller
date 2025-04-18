@@ -29,7 +29,15 @@ var (
 )
 
 // given a template, and a config, generate shell script.
-func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
+// TemplateContext extends the config.Project with attestation options
+type TemplateContext struct {
+	*config.Project
+	EnableGHAttestation      bool
+	RequireAttestation       bool
+	GHAttestationVerifyFlags string
+}
+
+func makeShell(tplsrc string, ctx TemplateContext) ([]byte, error) {
 	// if we want to add a timestamp in the templates this
 	//  function will generate it
 	funcMap := template.FuncMap{
@@ -63,7 +71,7 @@ func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = t.Execute(&out, cfg)
+	err = t.Execute(&out, ctx)
 	return out.Bytes(), err
 }
 
@@ -78,7 +86,9 @@ func makePlatform(goos, goarch, goarm string) string {
 
 // makePlatformBinaries returns a map from platforms to a slice of binaries
 // built for that platform.
-func makePlatformBinaries(cfg *config.Project) map[string][]string {
+func makePlatformBinaries(ctx TemplateContext) map[string][]string {
+	cfg := ctx.Project
+
 	platformBinaries := make(map[string][]string)
 	for _, build := range cfg.Builds {
 		ignore := make(map[string]bool)
@@ -345,10 +355,13 @@ func main() {
 	log.SetHandler(cli.Default)
 
 	var (
-		repo   = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
-		output = kingpin.Flag("output", "output file, default stdout").Short('o').String()
-		force  = kingpin.Flag("force", "force writing of output").Short('f').Bool()
-		file   = kingpin.Arg("file", "godownloader.yaml file or URL").String()
+		repo                     = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
+		output                   = kingpin.Flag("output", "output file, default stdout").Short('o').String()
+		force                    = kingpin.Flag("force", "force writing of output").Short('f').Bool()
+		enableGHAttestation      = kingpin.Flag("enable-gh-attestation", "enable GitHub attestation verification").Bool()
+		requireAttestation       = kingpin.Flag("require-attestation", "require attestation verification").Bool()
+		ghAttestationVerifyFlags = kingpin.Flag("gh-attestation-verify-flags", "additional flags to pass to gh attestation verify").String()
+		file                     = kingpin.Arg("file", "godownloader.yaml file or URL").String()
 	)
 
 	kingpin.CommandLine.Version(fmt.Sprintf("%v, commit %v, built at %v", version, commit, datestr))
@@ -356,8 +369,21 @@ func main() {
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()
 
+	// Validate attestation options
+	if *requireAttestation && !*enableGHAttestation {
+		log.Error("cannot specify --require-attestation without --enable-gh-attestation")
+		os.Exit(1)
+	}
+
+	// Create attestation options
+	attestationOpts := AttestationOptions{
+		EnableGHAttestation:      *enableGHAttestation,
+		RequireAttestation:       *requireAttestation,
+		GHAttestationVerifyFlags: *ghAttestationVerifyFlags,
+	}
+
 	// Process the source
-	out, err := processSource("godownloader", *repo, "", *file)
+	out, err := processSource("godownloader", *repo, "", *file, attestationOpts)
 
 	if err != nil {
 		log.WithError(err).Error("failed")

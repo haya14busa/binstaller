@@ -50,7 +50,7 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	// Generate the installation script for the repository
 	installerPath := filepath.Join(tempDir, binaryName+"-install.sh")
 	var stdout bytes.Buffer
-	generateCmd := exec.Command(goinstallerPath, "--repo="+repo)
+	generateCmd := exec.Command(goinstallerPath, "--repo="+repo, "--enable-gh-attestation")
 	generateCmd.Stdout = &stdout
 	if err := generateCmd.Run(); err != nil {
 		t.Fatalf("Failed to generate installation script: %v", err)
@@ -76,7 +76,8 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 		// On Windows, we need to use the & operator to execute the script
 		installCmd = exec.Command("powershell", "-Command", "& '"+installerPath+"' -b '"+binDir+"' -d")
 	} else {
-		installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d")
+		// Skip attestation verification to avoid failures for repositories without attestations
+		installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d", "-s")
 	}
 	installCmd.Stderr = &stderr
 	installCmd.Stdout = &installStdout

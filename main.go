@@ -29,7 +29,6 @@ import (
 var (
 	version = "dev"
 	commit  = "none"
-	datestr = "unknown"
 )
 
 // given a template, and a config, generate shell script.
@@ -730,7 +729,7 @@ func main() {
 		file                     = kingpin.Arg("file", "godownloader.yaml file or URL").String()
 	)
 
-	kingpin.CommandLine.Version(fmt.Sprintf("%v, commit %v, built at %v", version, commit, datestr))
+	kingpin.CommandLine.Version(fmt.Sprintf("%v, commit %v", version, commit))
 	kingpin.CommandLine.VersionFlag.Short('v')
 	kingpin.CommandLine.HelpFlag.Short('h')
 	kingpin.Parse()

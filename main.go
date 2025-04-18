@@ -309,36 +309,6 @@ func getLatestCommitSHA(repo, branch string) (string, error) {
 	return commit.SHA, nil
 }
 
-// getGitCommitHashForFile returns the commit hash of the last commit that modified the file
-func getGitCommitHashForFile(file string) (string, error) {
-	// Get the absolute path of the file
-	absPath, err := filepath.Abs(file)
-	if err != nil {
-		log.Warnf("failed to get absolute path for %s: %v", file, err)
-		return "", err
-	}
-
-	// Check if the file is in a git repository
-	cmd := exec.Command("git", "rev-parse", "--show-toplevel")
-	cmd.Dir = filepath.Dir(absPath)
-	if err := cmd.Run(); err != nil {
-		log.Warnf("file %s is not in a git repository: %v", file, err)
-		return "", fmt.Errorf("file is not in a git repository: %v", err)
-	}
-
-	// Get the commit hash of the last commit that modified the file
-	cmd = exec.Command("git", "log", "-n", "1", "--pretty=format:%H", "--", absPath)
-	cmd.Dir = filepath.Dir(absPath)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
-		log.Warnf("failed to get git commit hash for %s: %v", file, err)
-		return "", fmt.Errorf("failed to get git commit hash: %v", err)
-	}
-
-	return strings.TrimSpace(out.String()), nil
-}
-
 // isFileModifiedInGit checks if the file has uncommitted changes in git
 func isFileModifiedInGit(file string) (bool, error) {
 	// Get the absolute path of the file
@@ -380,7 +350,11 @@ func calculateFileHash(file string) (string, error) {
 		log.Warnf("failed to open file %s: %v", file, err)
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Warnf("failed to close file %s: %v", file, err)
+		}
+	}()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -420,8 +394,7 @@ func loadFromGitHub(repo, configPath, version, specifiedCommitHash string) (*con
 		}
 	}
 
-	// Determine the actual config file path that was used
-	var actualConfigPath string
+	// Check if any of the config files exist
 	for _, file := range []string{configPath, "goreleaser.yml", ".goreleaser.yml", "goreleaser.yaml", ".goreleaser.yaml"} {
 		if file == "" {
 			continue
@@ -429,17 +402,16 @@ func loadFromGitHub(repo, configPath, version, specifiedCommitHash string) (*con
 		url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, commitHash, file)
 		resp, err := http.Head(url)
 		if err == nil && resp.StatusCode == http.StatusOK {
-			actualConfigPath = file
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				log.Warnf("failed to close response body: %v", err)
+			}
 			break
 		}
 		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
+			if err := resp.Body.Close(); err != nil {
+				log.Warnf("failed to close response body: %v", err)
+			}
 		}
-	}
-
-	if actualConfigPath == "" {
-		actualConfigPath = ".goreleaser.yml" // Default fallback
 	}
 
 	// Load the project configuration using the commit hash
@@ -517,7 +489,7 @@ func loadFromFile(file, version string) (*config.Project, string, error) {
 	}
 
 	// Final fallback to just using the file path
-	sourceInfo := fmt.Sprintf("%s", absPath)
+	sourceInfo := absPath
 	log.Infof("using fallback source info: %s", sourceInfo)
 	return project, sourceInfo, nil
 }

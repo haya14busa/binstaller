@@ -76,7 +76,8 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 		// On Windows, we need to use the & operator to execute the script
 		installCmd = exec.Command("powershell", "-Command", "& '"+installerPath+"' -b '"+binDir+"' -d")
 	} else {
-		installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d")
+		// Skip attestation verification to avoid failures for repositories without attestations
+		installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d", "-s")
 	}
 	installCmd.Stderr = &stderr
 	installCmd.Stdout = &installStdout

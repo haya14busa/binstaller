@@ -2,6 +2,7 @@ SOURCE_FILES?=./...
 TEST_PATTERN?=.
 TEST_OPTIONS?=
 OS=$(shell uname -s)
+LDFLAGS=-ldflags "-X main.version=$(shell git describe --tags --always --dirty || echo dev) -X main.commit=$(shell git rev-parse HEAD || echo none)"
 
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
@@ -29,8 +30,8 @@ setup: bin/golangci-lint bin/shellcheck ## Install all the build and lint depend
 	go mod download
 .PHONY: setup
 
-install: build ## build and install
-	go install .
+install: ## build and install
+	go install $(LDFLAGS) .
 
 test: ## Run all the tests
 	go test $(TEST_OPTIONS) -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
@@ -48,7 +49,7 @@ ci: build test lint ## travis-ci entrypoint
 	git diff .
 
 build: ## Build a beta version of goinstaller
-	go build
+	go build $(LDFLAGS)
 
 .DEFAULT_GOAL := build
 

@@ -9,14 +9,15 @@ type AttestationOptions struct {
 	EnableGHAttestation      bool
 	RequireAttestation       bool
 	GHAttestationVerifyFlags string
+	SkipSourceInfo           bool
 }
 
 // processSource processes the source and returns the generated shell script.
-func processSource(source, repo, path, file string, attestationOpts AttestationOptions) (out []byte, err error) {
+func processSource(source, repo, path, file string, attestationOpts AttestationOptions, commitHash string) (out []byte, err error) {
 	switch source {
 	case "godownloader":
 		// https://github.com/goreleaser/godownloader
-		out, err = processGodownloader(repo, path, file, attestationOpts)
+		out, err = processGodownloader(repo, path, file, attestationOpts, commitHash)
 	default:
 		return nil, fmt.Errorf("unknown source %q", source)
 	}

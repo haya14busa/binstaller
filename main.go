@@ -39,6 +39,7 @@ type TemplateContext struct {
 	RequireAttestation       bool
 	GHAttestationVerifyFlags string
 	SourceInfo               string // Information about the source used to generate the script
+	SkipSourceInfo           bool   // Whether to skip including source information in the generated script
 }
 
 func makeShell(tplsrc string, ctx TemplateContext) ([]byte, error) {
@@ -704,6 +705,7 @@ func main() {
 		output                   = kingpin.Flag("output", "output file, default stdout").Short('o').String()
 		force                    = kingpin.Flag("force", "force writing of output").Short('f').Bool()
 		commitHash               = kingpin.Flag("commit", "specific commit hash to use for GitHub repository").String()
+		skipSourceInfo           = kingpin.Flag("skip-source-info", "skip including source information in the generated script").Bool()
 		enableGHAttestation      = kingpin.Flag("enable-gh-attestation", "enable GitHub attestation verification").Bool()
 		requireAttestation       = kingpin.Flag("require-attestation", "require attestation verification").Bool()
 		ghAttestationVerifyFlags = kingpin.Flag("gh-attestation-verify-flags", "additional flags to pass to gh attestation verify").String()
@@ -726,6 +728,7 @@ func main() {
 		EnableGHAttestation:      *enableGHAttestation,
 		RequireAttestation:       *requireAttestation,
 		GHAttestationVerifyFlags: *ghAttestationVerifyFlags,
+		SkipSourceInfo:           *skipSourceInfo,
 	}
 
 	// Process the source

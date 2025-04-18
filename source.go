@@ -9,6 +9,7 @@ type AttestationOptions struct {
 	EnableGHAttestation      bool
 	RequireAttestation       bool
 	GHAttestationVerifyFlags string
+	SkipSourceInfo           bool
 }
 
 // processSource processes the source and returns the generated shell script.

@@ -23,6 +23,7 @@ The original project has been archived since January 2022, but the core function
 - **Cross-Platform Support**: Support various operating systems and architectures
 - **Checksum Verification**: Verify checksums of downloaded binaries
 - **GitHub Attestation Verification**: Verify GitHub attestations to enhance security
+- **Reproducible Builds**: Generate reproducible scripts with source traceability and commit-specific builds
 
 ## Getting Started
 
@@ -47,6 +48,12 @@ goinstaller --file=.goreleaser.yml > install.sh
 
 # Generate an installation script with attestation verification
 goinstaller --repo=owner/repo --require-attestation > install.sh
+
+# Generate an installation script from a specific commit
+goinstaller --repo=owner/repo --commit=abc123 > install.sh
+
+# Generate an installation script without source information
+goinstaller --repo=owner/repo --skip-source-info > install.sh
 ```
 
 ### Example
@@ -78,6 +85,7 @@ For more detailed documentation, see:
 
 - [Design Overview](design/overview.md): High-level design of the project
 - [Attestation Verification](design/attestation.md): Details on the GitHub attestation verification feature
+- [Reproducible Builds](reproducible-builds.md): Information on reproducible builds and source traceability
 - [Usage Guide](usage.md): Comprehensive guide on using the tool
 
 ## Comparison with Original GoDownloader
@@ -93,6 +101,8 @@ goinstaller differs from the original GoDownloader in several ways:
 | Raw GitHub Releases | ✅ | ❌ |
 | Tree Walking | ✅ | ❌ |
 | GitHub Attestation Verification | ❌ | ✅ |
+| Reproducible Builds | ❌ | ✅ |
+| Commit-Specific Generation | ❌ | ✅ |
 
 ## Contributing
 

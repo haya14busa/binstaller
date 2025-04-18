@@ -87,7 +87,7 @@ func TestAttestationWithSigspy(t *testing.T) {
 
 	// Generate the installation script with attestation verification
 	installerPath, err := generateInstallScript(t, tempDir, testRepo,
-		"--require-attestation", "--gh-attestation-verify-flags=--owner=actionutils")
+		"--enable-gh-attestation", "--require-attestation", "--gh-attestation-verify-flags=--owner=actionutils")
 	if err != nil {
 		t.Fatalf("Failed to generate installation script: %v", err)
 	}
@@ -124,8 +124,8 @@ func TestSkipAttestationWithSigspy(t *testing.T) {
 	// Create a temporary directory for all test artifacts
 	tempDir := t.TempDir()
 
-	// Generate the installation script with attestation verification skipped
-	installerPath, err := generateInstallScript(t, tempDir, testRepo, "--skip-attestation")
+	// Generate the installation script with attestation enabled but verification skipped
+	installerPath, err := generateInstallScript(t, tempDir, testRepo, "--enable-gh-attestation")
 	if err != nil {
 		t.Fatalf("Failed to generate installation script: %v", err)
 	}

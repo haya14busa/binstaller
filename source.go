@@ -6,8 +6,8 @@ import (
 
 // AttestationOptions contains options for attestation verification
 type AttestationOptions struct {
+	EnableGHAttestation      bool
 	RequireAttestation       bool
-	SkipAttestation          bool
 	GHAttestationVerifyFlags string
 }
 

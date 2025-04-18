@@ -40,8 +40,8 @@ func processGodownloader(repo, path, filename string, attestationOpts Attestatio
 	// Create a template context with the config and attestation options
 	ctx := TemplateContext{
 		Project:                  cfg,
+		EnableGHAttestation:      attestationOpts.EnableGHAttestation,
 		RequireAttestation:       attestationOpts.RequireAttestation,
-		SkipAttestation:          attestationOpts.SkipAttestation,
 		GHAttestationVerifyFlags: attestationOpts.GHAttestationVerifyFlags,
 	}
 
@@ -59,11 +59,13 @@ usage() {
   cat <<EOF
 $this: download go binaries for {{ $.Project.Release.GitHub.Owner }}/{{ $.Project.Release.GitHub.Name }}
 
-Usage: $this [-b] bindir [-d] [-a] [-s] [tag]
+Usage: $this [-b] bindir [-d]{{- if .EnableGHAttestation }} [-a] [-s]{{- end }} [tag]
   -b sets bindir or installation directory, Defaults to ./bin
   -d turns on debug logging
+{{- if .EnableGHAttestation }}
   -a requires attestation verification (fails if attestation is missing or invalid)
   -s skips attestation verification
+{{- end }}
    [tag] is a tag from
    https://github.com/{{ $.Project.Release.GitHub.Owner }}/{{ $.Project.Release.GitHub.Name }}/releases
    If tag is missing, then the latest will be used.
@@ -80,19 +82,22 @@ parse_args() {
   # over-ridden by flag below
 
   BINDIR=${BINDIR:-./bin}
-  while getopts "b:dh?xas" arg; do
+  while getopts "b:dh?x{{- if .EnableGHAttestation }}as{{- end }}" arg; do
     case "$arg" in
       b) BINDIR="$OPTARG" ;;
       d) log_set_priority 10 ;;
       h | \?) usage "$0" ;;
       x) set -x ;;
+      {{- if .EnableGHAttestation }}
       a) REQUIRE_ATTESTATION=true ;;
       s) VERIFY_ATTESTATION=false ;;
+      {{- end }}
     esac
   done
   shift $((OPTIND - 1))
   TAG=$1
 }
+{{- if .EnableGHAttestation }}
 # verify_attestation verifies the attestation for a binary
 verify_attestation() {
   local binary=$1
@@ -138,6 +143,7 @@ verify_attestation() {
     return 0
   fi
 }
+{{- end }}
 
 # this function wraps all the destructive operations
 # if a curl|bash cuts off the end of the script due to
@@ -150,6 +156,7 @@ execute() {
   http_download "${tmpdir}/${CHECKSUM}" "${CHECKSUM_URL}"
   hash_sha256_verify "${tmpdir}/${TARBALL}" "${tmpdir}/${CHECKSUM}"
 
+  {{- if .EnableGHAttestation }}
   # Verify attestation if enabled
   if [ "${VERIFY_ATTESTATION}" = "true" ]; then
     # Verify attestation
@@ -161,6 +168,7 @@ execute() {
     fi
     log_info "Attestation verification successful"
   fi
+  {{- end }}
 
   {{- if (index .Project.Archives 0).WrapInDirectory }}
   srcdir="${tmpdir}/${NAME}"
@@ -270,21 +278,19 @@ log_prefix() {
 PLATFORM="${OS}/${ARCH}"
 GITHUB_DOWNLOAD=https://github.com/${OWNER}/${REPO}/releases/download
 
+{{- if .EnableGHAttestation }}
 # Attestation verification configuration
 {{- if .RequireAttestation }}
 REQUIRE_ATTESTATION=true
 {{- else }}
-REQUIRE_ATTESTATION=${REQUIRE_ATTESTATION:-false}
+REQUIRE_ATTESTATION=${REQUIRE_ATTESTATION:-true}
 {{- end }}
-{{- if .SkipAttestation }}
-VERIFY_ATTESTATION=false
-{{- else }}
 VERIFY_ATTESTATION=${VERIFY_ATTESTATION:-true}
-{{- end }}
 {{- if .GHAttestationVerifyFlags }}
 DEFAULT_GH_ATTESTATION_VERIFY_FLAGS="{{ .GHAttestationVerifyFlags }}"
 {{- else }}
 DEFAULT_GH_ATTESTATION_VERIFY_FLAGS=""
+{{- end }}
 {{- end }}
 
 uname_os_check "$OS"

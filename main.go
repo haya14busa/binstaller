@@ -32,8 +32,8 @@ var (
 // TemplateContext extends the config.Project with attestation options
 type TemplateContext struct {
 	*config.Project
+	EnableGHAttestation      bool
 	RequireAttestation       bool
-	SkipAttestation          bool
 	GHAttestationVerifyFlags string
 }
 
@@ -358,8 +358,8 @@ func main() {
 		repo                     = kingpin.Flag("repo", "owner/name or URL of GitHub repository").Short('r').String()
 		output                   = kingpin.Flag("output", "output file, default stdout").Short('o').String()
 		force                    = kingpin.Flag("force", "force writing of output").Short('f').Bool()
+		enableGHAttestation      = kingpin.Flag("enable-gh-attestation", "enable GitHub attestation verification").Bool()
 		requireAttestation       = kingpin.Flag("require-attestation", "require attestation verification").Bool()
-		skipAttestation          = kingpin.Flag("skip-attestation", "skip attestation verification").Bool()
 		ghAttestationVerifyFlags = kingpin.Flag("gh-attestation-verify-flags", "additional flags to pass to gh attestation verify").String()
 		file                     = kingpin.Arg("file", "godownloader.yaml file or URL").String()
 	)
@@ -370,15 +370,15 @@ func main() {
 	kingpin.Parse()
 
 	// Validate attestation options
-	if *requireAttestation && *skipAttestation {
-		log.Error("cannot specify both --require-attestation and --skip-attestation")
+	if *requireAttestation && !*enableGHAttestation {
+		log.Error("cannot specify --require-attestation without --enable-gh-attestation")
 		os.Exit(1)
 	}
 
 	// Create attestation options
 	attestationOpts := AttestationOptions{
+		EnableGHAttestation:      *enableGHAttestation,
 		RequireAttestation:       *requireAttestation,
-		SkipAttestation:          *skipAttestation,
 		GHAttestationVerifyFlags: *ghAttestationVerifyFlags,
 	}
 

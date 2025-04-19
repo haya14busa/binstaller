@@ -170,6 +170,24 @@ When `checksums.embedded_checksums` is provided, the generated installer script 
 
 This feature is particularly valuable for enterprise environments, air-gapped systems, or deployments in regions with unreliable internet connectivity.
 
+#### 3.3.4 Adding checksums to existing configs
+
+The `embed-checksums` command allows adding checksums from an existing checksum file to an InstallSpec config:
+
+```bash
+goinstaller embed-checksums --config install-spec.yaml --checksum-file SHA256SUMS --version v1.2.3
+```
+
+This command will:
+1. Parse the provided checksum file (e.g., SHA256SUMS)
+2. Extract checksums for assets that match the patterns defined in the config
+3. Add the checksums to the config under the `checksums.embedded_checksums` field for the specified version
+4. Save the updated config
+
+The verification of checksums and attestations should be handled externally before using this command. This approach allows for a clean separation of concerns, where:
+- Verification tools handle the security aspects
+- The `embed-checksums` command focuses solely on updating the config with pre-verified checksums
+
 ## 4. Worked Example
 
 ```yaml
@@ -203,8 +221,37 @@ Running on **Windows amd64** yields
 `mycli-v2.3.4-windows-amd64.zip` because the extension override rule in Section
 3 applies.
 
+## 5. Two-Step Workflow
 
-## 5. Schema definition (CUE)
+The InstallSpec is designed to work with a two-step workflow:
+
+> **Note**: These examples represent the current design thinking and may evolve during implementation. The exact command names, flags, and syntax are subject to change.
+
+1. **Config Generation**: First, generate the InstallSpec config file
+   ```bash
+   goinstaller init-config --source [goreleaser|github|cli] [options]
+   ```
+
+2. **Script Generation**: Then, generate the installer script from the config
+   ```bash
+   goinstaller generate-script --config install-spec.yaml [options]
+   ```
+
+Additionally, a utility command is provided to embed checksums into an existing config:
+
+```bash
+goinstaller embed-checksums --config install-spec.yaml --checksum-file SHA256SUMS --version v1.2.3
+```
+
+This separation provides several benefits:
+- The InstallSpec file can be inspected, validated, and version-controlled
+- The same config can be reused to generate different types of installer scripts (shell, PowerShell)
+- The script generation step becomes simpler and more focused
+- Checksums can be added to existing configs from external checksum files
+
+For more details on the workflow and command-line interface, see the [Architecture document](generic-installer-architecture.md).
+
+## 6. Schema definition (CUE)
 
 ```cue
 // InstallSpec defines the on-disk schema for the installer configuration.

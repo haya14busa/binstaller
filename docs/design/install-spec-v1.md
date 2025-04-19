@@ -2,7 +2,7 @@
 title: "InstallSpec v1 – Unified Installer Schema"
 date: "2025-04-19"
 author: "haya14busa"
-collaborators: ["codex (OpenAI o3)", "GitHub Copilot (Gemini 2.5 Pro, o4-mini)"]
+collaborators: ["codex (OpenAI o3)", "GitHub Copilot (Gemini 2.5 Pro, o4-mini)", "Roo Code (claude sonnet 3.7"]
 status: "draft"
 parent: generic-installer-architecture.md
 ---

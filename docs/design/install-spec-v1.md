@@ -208,8 +208,12 @@ InstallSpec: {
 1. Per‑rule `bin` / `bin_path` overrides – do we need them in v1?
 2. Support for non‑GitHub hosts (GitLab, self‑hosted, S3).
 3. What should be the default `strip_components` (0 vs 1)?
-4. Formalise semantic‑versioning story for the schema itself (`schema: v1`
-   vs `schema: v1alpha1`, transition period, feature‑guarding, etc.).
+4. Formalise semantic‑versioning story for the schema itself (`schema: v1.0.0`
+   vs `schema: v1.1.0`, transition period, feature‑guarding, etc.). Schema
+   versioning will follow Semantic Versioning 2.0.0 (SemVer). Major versions
+   (e.g., `v2.0.0`) indicate breaking changes. Minor versions (e.g., `v1.1.0`)
+   introduce backward-compatible features. Patch versions (e.g., `v1.0.1`)
+   represent backward-compatible bug fixes or clarifications to the schema.
 
 ---
 

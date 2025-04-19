@@ -2,7 +2,7 @@
 title: "InstallSpec v1 – Unified Installer Schema"
 date: "2025-04-19"
 author: "haya14busa"
-collaborators: ["OpenAI o3"]
+collaborators: ["codex (OpenAI o3)", "GitHub Copilot (Gemini 2.5 Pro, o4-mini)"]
 status: "draft"
 parent: generic-installer-architecture.md
 ---
@@ -85,8 +85,8 @@ asset:
   arch_alias: { amd64: x86_64, arm64: aarch64 }
 
   naming_convention:      # how uname output is normalised
-    os:   go             # go | uname | title
-    arch: go             # go | uname
+    os:   lowercase      # lowercase (darwin) | titlecase (Darwin)
+    arch: lowercase      # lowercase (amd64, armv6)
 
 checksums:
   template: "${NAME}-v${VERSION}-checksums.txt"
@@ -99,6 +99,9 @@ unpack:
 ### 3.1 Placeholders recognised in templates
 
 `${NAME}` `${VERSION}` `${OS}` `${ARCH}` `${EXT}` `${VARIANT}`
+
+*   `${OS}`: Represents the target operating system. The casing (e.g., `linux` vs `Linux`) depends on `naming_convention.os`.
+*   `${ARCH}`: Represents the target architecture. The specific value depends on `naming_convention.arch` and `arch_alias`. It might be a standard Go architecture name (e.g., `amd64`, `arm64`) or a more specific one (e.g., `armv6`) derived from system information and aliases.
 
 Placeholders are replaced *verbatim* after all aliasing and naming‑convention
 normalisation has taken place.  They are always replaced as plain strings; no
@@ -149,72 +152,117 @@ Running on **Windows amd64** yields
 
 ## 5. Schema definition (CUE)
 
-CUE was selected over Protocol Buffers / JSON‑Schema because:
-
-* schema, defaults and validation live in *one* concise file;
-* YAML/JSON can be directly imported/merged;
-* Go code generation is officially supported;
-* no runtime library is required for YAML reading – decoding still happens via
-  the generated Go structs.
-
 ```cue
-// installspect.cue – abridged
-
+// InstallSpec defines the on-disk schema for the installer configuration.
 InstallSpec: {
+  // schema version (SemVer): bump major for breaking changes.
   schema?: "v1" | *"v1"
+
+  // name of the binary to install.
+  // example: "mytool"
   name:    string
+
+  // GitHub owner/repo containing the releases.
+  // Must match '<owner>/<repo>'.
+  // example: "cli/cli"
   repo:    =~"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"
 
+  // optional list of supported OS/ARCH (and variant) combinations
+  // if omitted, all detected platforms are attempted and missing assets cause failure.
+  // example: [{os: "linux", arch: "amd64"}, {os: "darwin", arch: "arm64"}]
+  supported_platforms?: [...{
+    // operating system name
+    // example: "linux"
+    os:      string
+    // architecture name
+    // example: "amd64"
+    arch:    string
+    // optional variant for this platform (e.g., "gnu", "musl")
+    // if omitted, global variant settings apply
+    variant?: string
+  }] & >=1
+  // example: [{os: "linux", arch: "amd64", variant: "musl"}, {os: "darwin", arch: "arm64"}]
+
+  // default_version tags if not specified at runtime.
+  // example: "v1.2.3" or "latest"
   default_version?: string | *"latest"
 
+  // variant handles per-OS/ARCH variants (e.g., gnu vs musl).
   variant?: {
+    // enable runtime detection of variant
+    // if false, use default.
     detect?:  bool | *true
+
+    // fallback variant when detection fails.
+    // example: "gnu"
     default:  string
+
+    // allowed variant values.
+    // example: ["gnu", "musl"]
     choices?: [...string] & >=1
   }
 
+  // asset describes how to construct download URLs and names.
   asset: {
-    template: string & =~".*\\${VERSION}.*"
+    // file name template with placeholders:
+    // ${NAME},${VERSION},${OS},${ARCH},${EXT},${VARIANT}
+    // example: "${NAME}-v${VERSION}-${OS}-${ARCH}.tar.gz"
+    template: string
 
+    // rules for per-platform overrides; first match wins.
     rules?: [...{
       when: { os?: string, arch?: string, variant?: string }
+      // optional override template
       template?: string
+      // optional override extension
       ext?:      string
     }]
 
+    // map system os names to schema os placeholder
+    // example: { darwin: "macOS" }
     os_alias?:   { [string]: string }
+
+    // map system arch names to schema arch placeholder
+    // example: { armv6: "armv6l" }
     arch_alias?: { [string]: string }
 
+    // control casing of placeholders
     naming_convention?: {
-      os:   "go" | "uname" | "title" | *"go"
-      arch: "go" | "uname" | *"go"
+      // lowercase ("linux") or titlecase ("Linux").
+      os:   "lowercase" | "titlecase" | *"lowercase"
+      // lowercase only ("amd64", "armv6").
+      arch: "lowercase" | *"lowercase"
     }
   }
 
+  // verify checksums or signatures
   checksums?: {
+    // name of checksum file
+    // example: "${NAME}-v${VERSION}-checksums.txt"
     template:  string
-    algorithm?: "sha256" | "sha512" | *"sha256"
-    per_asset?: bool | *false
+
+    // supported checksum algorithm (script currently only supports sha256)
+    algorithm?: "sha256" | *"sha256"
   }
 
+  // attestation settings (GitHub 'gh attestation verify')
+  attestation?: {
+    // enable attestation verification feature
+    // corresponds to CLI flag --enable-gh-attestation
+    enabled?:           bool   | *false
+    // require attestation verification to succeed, else fail install
+    // corresponds to CLI flag --require-attestation
+    require?:           bool   | *false
+    // additional flags passed to 'gh attestation verify'
+    // corresponds to --gh-attestation-verify-flags
+    verify_flags?:      string
+  }
+
+  // unpack controls how archives are extracted
   unpack?: {
+    // strip leading path components when extracting
+    // maps to 'tar --strip-components=<n>'
     strip_components?: int | *0
   }
 }
 ```
-
-## 6. Future Work / Open Questions
-
-1. Per‑rule `bin` / `bin_path` overrides – do we need them in v1?
-2. Support for non‑GitHub hosts (GitLab, self‑hosted, S3).
-3. What should be the default `strip_components` (0 vs 1)?
-4. Formalise semantic‑versioning story for the schema itself (`schema: v1.0.0`
-   vs `schema: v1.1.0`, transition period, feature‑guarding, etc.). Schema
-   versioning will follow Semantic Versioning 2.0.0 (SemVer). Major versions
-   (e.g., `v2.0.0`) indicate breaking changes. Minor versions (e.g., `v1.1.0`)
-   introduce backward-compatible features. Patch versions (e.g., `v1.0.1`)
-   represent backward-compatible bug fixes or clarifications to the schema.
-
----
-
-*Please leave comments directly on this document; improvements welcome.*

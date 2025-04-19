@@ -8,6 +8,12 @@ status: "draft"
 
 # Generic Config‑Driven Installer Architecture
 
+> 📄 **Document series overview**  
+> This file lays out the *architecture* of a generic, config‑driven installer
+> pipeline.  The concrete specification of the on‑disk schema referred to in
+> this document lives in **[InstallSpec v1](install-spec-v1.md)** which should be
+> read together with this file.
+
 ## 1. Background & Motivation
 Today, `goinstaller` only supports reading a GoReleaser YAML (`.goreleaser.yml`) to generate a shell installer script.
 Many projects either do not use GoReleaser or have custom asset naming conventions and release workflows.

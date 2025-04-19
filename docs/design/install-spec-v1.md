@@ -4,15 +4,19 @@ date: "2025-04-19"
 author: "haya14busa"
 collaborators: ["OpenAI o3"]
 status: "draft"
+parent: generic-installer-architecture.md
 ---
 
 # InstallSpec v1 – Design Document (DRAFT)
 
-This document records the design of **InstallSpec v1**, the first public,
-stable on‑disk schema that `goinstaller` consumes to generate cross‑platform
-installer scripts.  The schema intentionally focuses on *what to install*;
-*how the file was produced* (GoReleaser, hand‑crafted, Buildkite, …) is out of
-scope and left to pluggable **Source Adapters**.
+This document is **part 2** of the *Generic Config‑Driven Installer* series.  It
+defines **InstallSpec v1**, the first public, stable on‑disk schema that
+`goinstaller` consumes to generate cross‑platform installer scripts (see
+*[Architecture]*](generic-installer-architecture.md) for the high‑level design).
+
+InstallSpec focuses on *what to install*; *how the file was produced*
+(GoReleaser, hand‑crafted, Buildkite, …) is out of scope and handled by the
+pluggable **Source Adapters** described in the architecture document.
 
 The primary audience is maintainers of CLI tools who wish to publish GitHub
 release assets that “just work” with a single, predictable `curl | sh`

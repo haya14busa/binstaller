@@ -8,10 +8,10 @@ status: "draft"
 
 # Generic Config‑Driven Installer Architecture
 
-> 📄 **Document series overview**  
+> 📄 **Document series overview**
 > This file lays out the *architecture* of a generic, config‑driven installer
 > pipeline.  The concrete specification of the on‑disk schema referred to in
-> this document lives in **[InstallSpec v1](install-spec-v1.md)** which should be
+> this document lives in **[InstallSpec v1](install-spec-v1.md)** which should be
 > read together with this file.
 
 ## 1. Background & Motivation
@@ -41,7 +41,8 @@ We need a pluggable, data‑source‑agnostic architecture that—given minimal 
 - **InstallSpec**: Go struct/YAML schema that holds:
   - `name`, `repo`, `version` placeholder
   - per‑platform archives (`os`, `arch`, `asset` template, `bin`)
-  - checksum definition (file, algorithm)
+  - checksum definition (file, algorithm, embedded checksums)
+  - attestation verification settings
   - unpack options (strip components)
 - **ScriptBuilder**: generates installer scripts
   - powered by Go `text/template` (+ sprig)
@@ -65,6 +66,12 @@ assets:
 verify:
   checksum: true
   attestation: true
+  embedded_checksums:  # Pre-verified checksums embedded in the script
+    v1.2.3:
+      - filename: "mytool_1.2.3_linux_amd64.tar.gz"
+        hash: "1234567890abcdef..."
+      - filename: "mytool_1.2.3_darwin_arm64.tar.gz"
+        hash: "abcdef1234567890..."
 templates:
   shell: default_install.sh.tmpl
   powershell: default_install.ps1.tmpl
@@ -100,6 +107,14 @@ goinstaller generate \
   --base-url https://example.com/downloads \
   --asset linux/amd64=mytool_{{version}}_linux_amd64.tgz \
   --output install.sh
+
+# With pre-verified checksums
+goinstaller generate \
+  --source github \
+  --repo owner/repo \
+  --tag v1.2.3 \
+  --pre-verify-checksums \
+  --output install.sh
 ```
 
 ## 6. Integration with Existing Code
@@ -126,14 +141,43 @@ goinstaller/
 - Existing flags deprecated in favor of explicit `--source`
 - Support overrides via CLI and manual YAML
 
-## 8. Implementation Roadmap
-1. Phase 1: Extract InstallSpec & SourceAdapter interface; migrate current GoReleaser code
-2. Phase 2: Wire CLI flag parsing to select SourceAdapter
-3. Phase 3: Implement GitHub Probe adapter (API calls, naming heuristics)
-4. Phase 4: Add File & Flags adapters
-5. Phase 5: Update templates, tests, examples, docs
+## 8. Embedded Checksums Benefits
 
-## 9. Risks & Mitigations
+The embedded checksums feature provides several significant advantages:
+
+### 8.1 Performance Improvements
+- **Reduced HTTP Requests**: Eliminates the need to download separate checksum files during installation, reducing the number of HTTP requests by at least one per installation.
+- **Faster Installations**: Installation completes more quickly, especially on slower networks, as there's no need to wait for additional checksum file downloads.
+- **Optimized Verification Flow**: When the installer script itself is verified with attestation, the embedded checksums can be trusted implicitly, allowing the binary verification process to be streamlined or even skipped in certain scenarios, further accelerating the installation process.
+
+### 8.2 Reliability Enhancements
+- **Offline Installation Support**: Enables completely offline installations once the installer script and binary are downloaded, as no additional network requests for checksum files are needed.
+- **Reduced Network Dependency**: Less susceptible to temporary network issues or checksum file server unavailability.
+- **Consistent Verification**: Ensures the same checksums are used for verification regardless of network conditions or changes to remote checksum files.
+
+### 8.3 Security Considerations
+- **Pre-verified Integrity**: Checksums can be pre-verified by the script generator using `gh attestation verify` or other secure methods before embedding.
+- **Tamper Resistance**: Makes it harder for attackers to substitute malicious checksums, as they would need to modify the installer script itself (which could also be signed or verified).
+- **Audit Trail**: Provides a clear record of which checksums were used for verification at the time the installer was generated.
+- **Trust Chain**: When the installer script is verified with attestation, the embedded checksums inherit this trust, creating a stronger end-to-end security model.
+
+### 8.4 User Experience
+- **Simplified Installation**: Users don't need to worry about checksum file availability or format.
+- **Consistent Behavior**: Installation process behaves the same way across different environments and network conditions.
+- **Transparent Verification**: Users can inspect the embedded checksums in the installer script before running it.
+
+This feature is particularly valuable for enterprise environments with strict security policies, air-gapped systems, or deployments in regions with unreliable internet connectivity.
+
+## 9. Implementation Roadmap
+1. Phase 1: Extract InstallSpec & SourceAdapter interface; migrate current GoReleaser code
+2. Phase 2: Wire CLI flag parsing to select SourceAdapter
+3. Phase 3: Implement GitHub Probe adapter (API calls, naming heuristics)
+4. Phase 4: Add File & Flags adapters
+5. Phase 5: Update templates, tests, examples, docs
+6. Phase 6: Implement embedded checksums feature for offline installation
+
+## 10. Risks & Mitigations
 - Naming inference may require pattern flags for edge cases
 - GitHub rate limits: support unauthenticated vs token flows
 - Template versioning: allow per‑project overrides and locking
+- Embedded checksums: ensure proper validation of pre-verified checksums

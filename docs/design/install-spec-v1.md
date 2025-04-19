@@ -7,19 +7,19 @@ status: "draft"
 parent: generic-installer-architecture.md
 ---
 
-# InstallSpec v1 – Design Document (DRAFT)
+# InstallSpec v1 – Design Document (DRAFT)
 
-This document is **part 2** of the *Generic Config‑Driven Installer* series.  It
-defines **InstallSpec v1**, the first public, stable on‑disk schema that
+This document is **part 2** of the *Generic Config‑Driven Installer* series.  It
+defines **InstallSpec v1**, the first public, stable on‑disk schema that
 `goinstaller` consumes to generate cross‑platform installer scripts (see
 *[Architecture]*](generic-installer-architecture.md) for the high‑level design).
 
 InstallSpec focuses on *what to install*; *how the file was produced*
 (GoReleaser, hand‑crafted, Buildkite, …) is out of scope and handled by the
-pluggable **Source Adapters** described in the architecture document.
+pluggable **Source Adapters** described in the architecture document.
 
 The primary audience is maintainers of CLI tools who wish to publish GitHub
-release assets that “just work” with a single, predictable `curl | sh`
+release assets that "just work" with a single, predictable `curl | sh`
 one‑liner without constraining their build pipeline to GoReleaser.
 
 ## 1. Motivation & Background
@@ -36,26 +36,26 @@ many projects that:
 To unlock those cases we introduce **InstallSpec**, a single document that
 describes *what* to download and install.  *Where* the information came from
 (GoReleaser YAML, GitHub API probing, CLI flags…) is handled by pluggable
-“SourceAdapters” upstream.
+"SourceAdapters" upstream.
 
 ## 2. Design Requirements
 
-R1  Single text file (YAML/JSON) that end‑users can also hand‑edit.
+R1  Single text file (YAML/JSON) that end‑users can also hand‑edit.
 
-R2  Concisely express common patterns; avoid having to enumerate every
-    OS/ARCH/variant combination.
+R2  Concisely express common patterns; avoid having to enumerate every
+    OS/ARCH/variant combination.
 
-R3  Handle naming irregularities (capitalisation, aliases, vendor variants).
+R3  Handle naming irregularities (capitalisation, aliases, vendor variants).
 
-R4  Allow runtime auto‑detection *and* explicit override of variants.
+R4  Allow runtime auto‑detection *and* explicit override of variants.
 
-R5  Provide machine validation for structure, defaults, enums.
+R5  Provide machine validation for structure, defaults, enums.
 
-R6  Remain VCS‑friendly (no generated binary blobs inside repo).
+R6  Remain VCS‑friendly (no generated binary blobs inside repo).
 
-R7  Schema must be forward‑compatible: new, unknown fields must be safely
-    ignored by an older `goinstaller` binary, while a newer binary can still
-    understand old specs without a migration step.
+R7  Schema must be forward‑compatible: new, unknown fields must be safely
+    ignored by an older `goinstaller` binary, while a newer binary can still
+    understand old specs without a migration step.
 
 ## 3. InstallSpec v1 – High‑level Structure
 
@@ -91,6 +91,15 @@ asset:
 checksums:
   template: "${NAME}-v${VERSION}-checksums.txt"
   algorithm: sha256
+  embedded_checksums:     # pre-verified checksums embedded in the script
+    v1.2.3:               # version-specific checksums
+      - filename: "gh-v1.2.3-linux-amd64.tar.gz"
+        hash: "1234567890abcdef..."
+        algorithm: "sha256"  # optional, defaults to checksums.algorithm
+      - filename: "gh-v1.2.3-darwin-arm64.tar.gz"
+        hash: "abcdef1234567890..."
+      - filename: "gh-v1.2.3-linux-amd64-musl.tar.gz"  # variant support
+        hash: "fedcba0987654321..."
 
 unpack:
   strip_components: 1
@@ -116,6 +125,51 @@ shell quoting is attempted inside the template – the caller (usually
 4. Walk `asset.rules`; first matching `when` wins.
 5. Combine `template` & `ext` overrides, then substitute placeholders.
 
+### 3.3 Embedded checksums
+
+The `checksums.embedded_checksums` field is a new feature that allows pre-verified checksums to be embedded directly in the generated installer script. This provides several significant benefits:
+
+#### 3.3.1 How it works
+
+When `checksums.embedded_checksums` is provided, the generated installer script will:
+
+1. Check if the target file's checksum is available in the embedded checksums for the requested version
+2. If found, use the embedded checksum for verification without downloading the checksum file
+3. If not found, fall back to downloading the checksum file specified by `checksums.template`
+
+#### 3.3.2 Benefits
+
+**Performance and Efficiency:**
+- Eliminates an HTTP request to download the checksum file, making installations faster
+- Reduces bandwidth usage, especially important for users with limited or metered connections
+- Streamlines the installation process by removing a dependency on an external file
+- When the installer script itself is verified with attestation, the embedded checksums can be trusted implicitly, potentially allowing the binary verification process to be simplified or accelerated, further improving installation speed
+
+**Reliability:**
+- Enables completely offline installations once the installer script is downloaded
+- Makes the installation process more robust against temporary network issues
+- Ensures consistent verification regardless of checksum file availability
+
+**Security:**
+- Checksums can be pre-verified during script generation using `gh attestation verify` or other secure methods
+- Reduces the attack surface by eliminating a potential point of compromise (the checksum file)
+- Provides a clear audit trail of which checksums were used for verification
+- Creates a stronger trust chain when the installer script itself is verified with attestation, as the embedded checksums inherit this trust
+
+**User Experience:**
+- Creates a more predictable installation experience across different environments
+- Simplifies troubleshooting by reducing potential points of failure
+- Allows users to inspect the embedded checksums before running the installer
+
+#### 3.3.3 Implementation considerations
+
+- Checksums should be organized by version to support multiple versions in a single InstallSpec
+- Explicit filenames should be used rather than platform identifiers to support variants and custom naming schemes
+- The algorithm field is optional and defaults to the global `checksums.algorithm` value
+- For security-critical applications, consider combining embedded checksums with attestation verification
+
+This feature is particularly valuable for enterprise environments, air-gapped systems, or deployments in regions with unreliable internet connectivity.
+
 ## 4. Worked Example
 
 ```yaml
@@ -131,7 +185,7 @@ checksums:
   template: "${NAME}-v${VERSION}-checksums.txt"
 ```
 
-If a user executes the generated installer on **macOS arm64** requesting
+If a user executes the generated installer on **macOS arm64** requesting
 version `v2.3.4`, resolution proceeds as follows:
 
 1. `OS` / `ARCH` normalise to `darwin` / `arm64` (Go convention).
@@ -144,7 +198,7 @@ version `v2.3.4`, resolution proceeds as follows:
 
    `mycli-v2.3.4-checksums.txt`
 
-Running on **Windows amd64** yields
+Running on **Windows amd64** yields
 
 `mycli-v2.3.4-windows-amd64.zip` because the extension override rule in Section
 3 applies.
@@ -243,6 +297,25 @@ InstallSpec: {
 
     // supported checksum algorithm (script currently only supports sha256)
     algorithm?: "sha256" | *"sha256"
+
+    // pre-verified checksums embedded directly in the installer script
+    // eliminates the need to download checksum files during installation
+    embedded_checksums?: {
+      // version-specific checksums, keyed by version string
+      [string]: [...{
+        // filename of the asset
+        // example: "mytool-v1.2.3-linux-amd64.tar.gz"
+        filename: string
+
+        // hash value of the asset
+        // example: "1234567890abcdef..."
+        hash: string
+
+        // optional algorithm override
+        // defaults to checksums.algorithm if not specified
+        algorithm?: "sha256" | *"sha256"
+      }]
+    }
   }
 
   // attestation settings (GitHub 'gh attestation verify')
@@ -265,4 +338,3 @@ InstallSpec: {
     strip_components?: int | *0
   }
 }
-```

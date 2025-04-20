@@ -12,7 +12,7 @@ parent: generic-installer-architecture.md
 This document is **part 2** of the *Generic Config‑Driven Installer* series.  It
 defines **InstallSpec v1**, the first public, stable on‑disk schema that
 `binstaller` consumes to generate cross‑platform installer scripts (see
-*[Architecture]*](generic-installer-architecture.md) for the high‑level design).
+*[Architecture](generic-installer-architecture.md)* for the high‑level design).
 
 InstallSpec focuses on *what to install*; *how the file was produced*
 (GoReleaser, hand‑crafted, Buildkite, …) is out of scope and handled by the

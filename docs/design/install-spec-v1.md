@@ -11,7 +11,7 @@ parent: generic-installer-architecture.md
 
 This document is **part 2** of the *Generic Config‑Driven Installer* series.  It
 defines **InstallSpec v1**, the first public, stable on‑disk schema that
-`goinstaller` consumes to generate cross‑platform installer scripts (see
+`binstaller` consumes to generate cross‑platform installer scripts (see
 *[Architecture]*](generic-installer-architecture.md) for the high‑level design).
 
 InstallSpec focuses on *what to install*; *how the file was produced*
@@ -24,7 +24,7 @@ one‑liner without constraining their build pipeline to GoReleaser.
 
 ## 1. Motivation & Background
 
-`goinstaller` v0 only understands GoReleaser YAML.  That prevents support for
+The earlier `goinstaller` prototype (pre‑rename) only understood GoReleaser YAML.  That prevents support for
 many projects that:
 
 * hand‑craft release assets (Rust, Zig, C/C++ projects, …)
@@ -54,7 +54,7 @@ R5  Provide machine validation for structure, defaults, enums.
 R6  Remain VCS‑friendly (no generated binary blobs inside repo).
 
 R7  Schema must be forward‑compatible: new, unknown fields must be safely
-    ignored by an older `goinstaller` binary, while a newer binary can still
+ignored by an older `binstaller` binary, while a newer binary can still
     understand old specs without a migration step.
 
 ## 3. InstallSpec v1 – High‑level Structure
@@ -115,7 +115,7 @@ unpack:
 Placeholders are replaced *verbatim* after all aliasing and naming‑convention
 normalisation has taken place.  They are always replaced as plain strings; no
 shell quoting is attempted inside the template – the caller (usually
-`goinstaller`) is responsible for quoting paths when executing commands.
+`binstaller`) is responsible for quoting paths when executing commands.
 
 ### 3.2 Asset resolution flow
 
@@ -175,7 +175,7 @@ This feature is particularly valuable for enterprise environments, air-gapped sy
 The `embed-checksums` command allows adding checksums from an existing checksum file to an InstallSpec config:
 
 ```bash
-goinstaller embed-checksums --config install-spec.yaml --checksum-file SHA256SUMS --version v1.2.3
+binstaller embed-checksums --config .binstaller.yml --checksum-file SHA256SUMS --version v1.2.3
 ```
 
 This command will:
@@ -191,7 +191,7 @@ The verification of checksums and attestations should be handled externally befo
 ## 4. Worked Example
 
 ```yaml
-# mycli-installspec.yml (abridged)
+# .binstaller.yml (abridged)
 
 name: mycli
 repo: acme/mycli
@@ -229,18 +229,18 @@ The InstallSpec is designed to work with a two-step workflow:
 
 1. **Config Generation**: First, generate the InstallSpec config file
    ```bash
-   goinstaller init-config --source [goreleaser|github|cli] [options]
+   binstaller init-config --source [goreleaser|github|cli] [options]
    ```
 
 2. **Script Generation**: Then, generate the installer script from the config
    ```bash
-   goinstaller generate-script --config install-spec.yaml [options]
+   binstaller generate-script --config .binstaller.yml [options]
    ```
 
 Additionally, a utility command is provided to embed checksums into an existing config:
 
 ```bash
-goinstaller embed-checksums --config install-spec.yaml --checksum-file SHA256SUMS --version v1.2.3
+binstaller embed-checksums --config .binstaller.yml --checksum-file SHA256SUMS --version v1.2.3
 ```
 
 This separation provides several benefits:
@@ -384,4 +384,5 @@ InstallSpec: {
     // maps to 'tar --strip-components=<n>'
     strip_components?: int | *0
   }
-}
+
+ }

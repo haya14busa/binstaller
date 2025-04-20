@@ -1,7 +1,7 @@
 ---
 title: "InstallSpec‑Driven Installer Architecture"
 date: "2025-04-19"
-author: "goinstaller Team"
+author: "binstaller Team"
 version: "0.2.0"
 status: "draft"
 ---
@@ -14,8 +14,14 @@ status: "draft"
 > this document lives in **[InstallSpec v1](install-spec-v1.md)** which should be
 > read together with this file.
 
+> 🛈 **Naming note** — The prototype implementation was called *goinstaller* but
+> the scope has since expanded beyond Go projects.  To avoid confusion and to
+> reflect its language‑agnostic mission the tool will be renamed **binstaller**
+> (CLI binary `binst`).  Throughout this document we use the new name; any
+> lingering references to *goinstaller* denote historic context only.
+
 ## 1. Background & Motivation
-Today, `goinstaller` only supports reading a GoReleaser YAML (`.goreleaser.yml`) to generate a shell installer script.
+Today, the pre‑rename **goinstaller** tool only supports reading a GoReleaser YAML (`.goreleaser.yml`) to generate a shell installer script.  As we transition to the **binstaller** name (removing the "Go" coupling) this document generalises the design to be language‑agnostic.
 Many projects either do not use GoReleaser or have custom asset naming conventions and release workflows.
 We need a pluggable, data‑source‑agnostic architecture that—given minimal inputs via CLI flags, manual config, GitHub API, etc.—can generate the same installer logic without being tightly coupled to GoReleaser.
 
@@ -37,7 +43,7 @@ We need a pluggable, data‑source‑agnostic architecture that—given minimal 
   - goreleaserAdapter (existing `.goreleaser.yml`)
   - githubProbeAdapter (GitHub Releases API, asset inspection)
   - flagsAdapter (CLI flags for name, patterns, etc.)
-  - fileAdapter (user‑supplied `install-spec.yaml`)
+  - fileAdapter (user‑supplied `.binstaller.yml`)
 - **InstallSpec**: Go struct/YAML schema that holds:
   - `name`, `repo`, `version` placeholder
   - per‑platform archives (`os`, `arch`, `asset` template, `bin`)
@@ -54,20 +60,20 @@ We need a pluggable, data‑source‑agnostic architecture that—given minimal 
 
 The new architecture introduces a two-step workflow to simplify the process:
 
-1. **Config Generation**: First generate the InstallSpec config
+1. **Config Generation**: First generate the InstallSpec‑compatible config
    ```bash
-   goinstaller init-config --source [goreleaser|github|cli] [options]
+   binstaller init-config --source [goreleaser|github|cli] [options]
    ```
 
-2. **Script Generation**: Then generate the installer script from the config
+2. **Script Generation**: Then generate the installer script from that config
    ```bash
-   goinstaller generate-script --config install-spec.yaml [options]
+   binstaller generate-script --config .binstaller.yml [options]
    ```
 
 Additionally, a utility command is provided to embed checksums into an existing config:
 
 ```bash
-goinstaller embed-checksums --config install-spec.yaml --checksum-file SHA256SUMS
+binstaller embed-checksums --config .binstaller.yml --checksum-file SHA256SUMS
 ```
 
 This separation allows for:
@@ -77,57 +83,128 @@ This separation allows for:
 - Easier testing and debugging
 - Ability to add checksums to existing configs from external checksum files
 
-## 5. CLI UX Examples
+## 5. Command‑line Interface (Design Draft)
 
-> **Note**: These examples represent the current design thinking and may evolve during implementation. The exact command names, flags, and syntax are subject to change.
+This section consolidates the CLI discussion for the **binstaller** program (binary name `binst`).  The goal is to keep the surface small but expressive.
+
+### 5.1 Top‑level grammar
+
+```
+binst <command> [global‑flags] [command‑flags] [args]
+```
+
+Canonical commands (only four):
+
+| Command | Purpose |
+|---------|---------|
+| `init`     | Create an InstallSpec from various sources (0 → 1) |
+| `gen`      | Generate an installer script from an InstallSpec |
+| `embed`    | Embed checksums or extra metadata into an InstallSpec |
+| `install`  | One‑shot install (internally runs *init* + *gen* and executes) |
+
+`embed` may be invoked via aliases (`embed‑hash`, `embed‑checksum`, `hash`).  Legacy longer names such as `init‑config`, `generate` are provided as hidden aliases.
+
+### 5.2 Global flags (available to every command)
+
+```
+  -c, --config <file>   Path to InstallSpec (default: auto‑detect ./.binstaller.yml)
+      --dry-run         Print actions without performing network or FS writes
+      --verbose|--debug Increase log verbosity
+      --quiet           Suppress progress output
+  -y, --yes             Assume "yes" on interactive prompts
+      --timeout <dur>   HTTP / process timeout (e.g. 30s, 2m)
+```
+
+### 5.3 Command details & flags
+
+#### A) `binst init`
+
+Generate an InstallSpec.
+
+Required flag `--source` (`goreleaser|github|cli|file|…`).  Other important flags:
+
+```
+  --file <path>              Path to .goreleaser.yml / other source file
+  --repo <owner/repo>        GitHub repository
+  --tag <vX.Y.Z>             Release tag / ref
+  --asset-pattern <tmpl>     Template for asset file names
+  -o, --output <file>        Write spec to file (default: stdout)
+```
+
+#### B) `binst gen`
+
+Transforms an InstallSpec into an installer script.
+
+```
+  --shell <sh|powershell>    Output script dialect (default: sh)
+  -o, --output <file>        Output path (default: stdout)
+``` 
+
+Typical usage:
 
 ```bash
-# Step 1: Generate config from GoReleaser
-goinstaller init-config \
-  --source goreleaser \
-  --file .goreleaser.yml \
-  --output install-spec.yaml
-
-# Step 1: Generate config from GitHub Releases
-goinstaller init-config \
-  --source github \
-  --repo owner/repo \
-  --tag v1.2.3 \
-  --asset-pattern "{{name}}_{{version}}_{{os}}_{{arch}}.tar.gz" \
-  --output install-spec.yaml
-
-# Step 1: Generate config from CLI flags
-goinstaller init-config \
-  --source cli \
-  --name mytool \
-  --version 0.9.0 \
-  --base-url https://example.com/downloads \
-  --asset linux/amd64=mytool_{{version}}_linux_amd64.tgz \
-  --output install-spec.yaml
-
-# Optional: Embed checksums into an existing config
-goinstaller embed-checksums \
-  --config install-spec.yaml \
-  --checksum-file SHA256SUMS \
-  --version v1.2.3
-
-# Step 2: Generate script from config
-goinstaller generate-script \
-  --config install-spec.yaml \
-  --output install.sh
+binst gen -c .binstaller.yml > install.sh
 ```
+
+#### C) `binst embed` (aliases: `embed-hash`, `embed-checksum`, `hash`)
+
+Embed checksums or additional metadata into a spec.
+
+```
+  --checksum-file <SHA256SUMS>   Path to checksum file
+  --version <vX.Y.Z>             Version being embedded (optional)
+  --algo <sha256|sha512>         Hash algorithm (default: sha256)
+  -o, --output <file>            If omitted, overwrite original spec
+```
+
+#### D) `binst install`
+
+Sugar command that performs *init* → *gen* → *execute* in one go.
+
+Examples:
+
+```bash
+# From existing spec
+binst install -c .binstaller.yml
+
+# Ad‑hoc install from GitHub release (no spec file on disk)
+binst install --repo cli/cli --tag v2.45.0
+```
+
+Implementation detail: the generated script is piped to `sh` (or PowerShell on Windows) via a temp file or stdin.
+
+### 5.4 Cheat‑sheet
+
+```bash
+# 1) Generate spec from GoReleaser YAML
+binst init --source goreleaser --file .goreleaser.yml -o .binstaller.yml
+
+# 2) Inspect & generate installer script
+binst gen -c .binstaller.yml -o install.sh
+
+# 3) Embed checksums
+binst embed -c .binstaller.yml --checksum-file SHA256SUMS
+
+# 4) Direct install using a spec
+binst install -c .binstaller.yml
+
+# 5) Direct install from GitHub without local spec
+binst install --repo cli/cli --tag v2.45.0
+```
+
+> The traditional pipeline `binst gen … | sh` continues to work; `binst install` is merely a convenience wrapper.
 
 ## 6. Integration with Existing Code
 ```
-goinstaller/
-├── cmd/goinstaller/main.go       # add subcommands for init-config and generate-script
+binstaller/
+├── cmd/binstaller/main.go       # add subcommands for init-config and generate-script
 ├── internal/
 │   ├── datasource/               # new package
 │   │   ├── interface.go          # SourceAdapter interface & options
 │   │   ├── goreleaser.go         # existing logic moved here
 │   │   ├── github.go             # GitHub probe implementation
 │   │   ├── flags.go              # flags → InstallSpec
-│   │   └── file.go               # install-spec.yaml parser
+│   │   └── file.go               # .binstaller.yml parser
 │   ├── config/                   # InstallSpec struct + YAML schema
 │   └── shell/                    # existing generator refactored as ScriptBuilder
 │       ├── generator.go

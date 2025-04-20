@@ -52,7 +52,7 @@ We need a pluggable, data‑source‑agnostic architecture that—given minimal 
   - unpack options (strip components)
   - For detailed schema definition, see [InstallSpec v1](install-spec-v1.md)
 - **ScriptBuilder**: generates installer scripts
-  - powered by Go `text/template` (+ sprig)
+  - powered by Go `text/template`
   - outputs POSIX `sh` installer scripts
   - injects download, checksum verify, attestation, retry, flags
 

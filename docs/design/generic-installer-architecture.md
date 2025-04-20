@@ -28,7 +28,7 @@ We need a pluggable, data‑source‑agnostic architecture that—given minimal 
 ## 2. Goals
 - Extract a **pure InstallSpec** that fully describes name, version placeholder, supported platforms, asset templates, checksum/verification settings, etc.
 - Define a **SourceAdapter** interface to populate that InstallSpec from any origin.
-- Maintain a single **ScriptGenerator** component that transforms InstallSpec → installer code (shell, PowerShell, …).
+- Maintain a single **ScriptGenerator** component that transforms InstallSpec → POSIX `sh` installer scripts.
 - Preserve existing GoReleaser flow as one SourceAdapter implementation.
 
 ## 3. High‑Level Architecture
@@ -53,7 +53,7 @@ We need a pluggable, data‑source‑agnostic architecture that—given minimal 
   - For detailed schema definition, see [InstallSpec v1](install-spec-v1.md)
 - **ScriptBuilder**: generates installer scripts
   - powered by Go `text/template` (+ sprig)
-  - supports POSIX shell & PowerShell; template sets are pluggable
+  - outputs POSIX `sh` installer scripts
   - injects download, checksum verify, attestation, retry, flags
 
 ## 4. Two-Step Workflow
@@ -62,18 +62,18 @@ The new architecture introduces a two-step workflow to simplify the process:
 
 1. **Config Generation**: First generate the InstallSpec‑compatible config
    ```bash
-   binstaller init-config --source [goreleaser|github|cli] [options]
+   binst init --source [goreleaser|github|cli] [options]
    ```
 
 2. **Script Generation**: Then generate the installer script from that config
    ```bash
-   binstaller generate-script --config .binstaller.yml [options]
+   binst gen --config .binstaller.yml [options]
    ```
 
 Additionally, a utility command is provided to embed checksums into an existing config:
 
 ```bash
-binstaller embed-checksums --config .binstaller.yml --checksum-file SHA256SUMS
+binst embed --config .binstaller.yml --checksum-file SHA256SUMS
 ```
 
 This separation allows for:
@@ -136,9 +136,8 @@ Required flag `--source` (`goreleaser|github|cli|file|…`).  Other important f
 Transforms an InstallSpec into an installer script.
 
 ```
-  --shell <sh|powershell>    Output script dialect (default: sh)
-  -o, --output <file>        Output path (default: stdout)
-``` 
+  -o, --output <file>   Output path (default: stdout)
+```
 
 Typical usage:
 
@@ -171,7 +170,7 @@ binst install -c .binstaller.yml
 binst install --repo cli/cli --tag v2.45.0
 ```
 
-Implementation detail: the generated script is piped to `sh` (or PowerShell on Windows) via a temp file or stdin.
+Implementation detail: the generated script is piped to `sh` via a temporary file or stdin.
 
 ### 5.4 Cheat‑sheet
 
@@ -194,24 +193,34 @@ binst install --repo cli/cli --tag v2.45.0
 
 > The traditional pipeline `binst gen … | sh` continues to work; `binst install` is merely a convenience wrapper.
 
-## 6. Integration with Existing Code
+## 6. Code Layout (proposed)
+
+The project follows a *public API vs internal* split:
+
 ```
 binstaller/
-├── cmd/binstaller/main.go       # add subcommands for init-config and generate-script
-├── internal/
-│   ├── datasource/               # new package
-│   │   ├── interface.go          # SourceAdapter interface & options
-│   │   ├── goreleaser.go         # existing logic moved here
-│   │   ├── github.go             # GitHub probe implementation
-│   │   ├── flags.go              # flags → InstallSpec
-│   │   └── file.go               # .binstaller.yml parser
-│   ├── config/                   # InstallSpec struct + YAML schema
-│   └── shell/                    # existing generator refactored as ScriptBuilder
-│       ├── generator.go
-│       └── templates/
-└── pkg/
-    └── verify/                   # checksum & attestation helpers
+├── cmd/binst/main.go      # CLI entry‑point (cobra / urfave‑cli, etc.)
+│
+├── pkg/                   # Public, import‑able Go packages
+│   ├── datasource/        # SourceAdapter interfaces + built‑in adapters
+│   │   ├── goreleaser.go  # GoReleaser YAML adapter
+│   │   └── github.go      # GitHub Releases probing adapter
+│   └── spec/              # InstallSpec struct, validation helpers
+│
+├── internal/              # No compatibility promise
+│   ├── shell/             # sh script generator & templates
+│   └── checksum/          # crypto helpers (used by embed‑hash)
+│
+└── tools/                 # cmd/scripts used only at build‑time (cue vet, etc.)
 ```
+
+Rationale:
+
+* `cmd/binst` reflects the final binary name.
+* `pkg/datasource` is exported so that external ecosystems can contribute new adapters without modifying core.
+* InstallSpec lives in `pkg/spec` because it is the primary user‑facing type; downstream tools may wish to generate or manipulate specs.
+* Script generation is implementation detail → `internal/shell`.
+* No standalone `pkg/verify` – checksum logic is small and kept internal.
 
 ## 7. Embedded Checksums Benefits
 
@@ -245,7 +254,7 @@ This feature is particularly valuable for enterprise environments with strict se
 2. Phase 2: Implement two-step workflow with init-config and generate-script commands
 3. Phase 3: Implement GitHub Probe adapter (API calls, naming heuristics)
 4. Phase 4: Add File & Flags adapters
-5. Phase 5: Implement embed-checksums command for adding checksums to existing configs
+5. Phase 5: Implement `binst embed` command for adding checksums to existing configs
 6. Phase 6: Update templates, tests, examples, docs
 
 ## 9. Risks & Mitigations

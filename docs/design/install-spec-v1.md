@@ -172,10 +172,10 @@ This feature is particularly valuable for enterprise environments, air-gapped sy
 
 #### 3.3.4 Adding checksums to existing configs
 
-The `embed-checksums` command allows adding checksums from an existing checksum file to an InstallSpec config:
+The `binst embed` command allows adding checksums from an existing checksum file to an InstallSpec config:
 
 ```bash
-binstaller embed-checksums --config .binstaller.yml --checksum-file SHA256SUMS --version v1.2.3
+binst embed --config .binstaller.yml --checksum-file SHA256SUMS --version v1.2.3
 ```
 
 This command will:
@@ -186,7 +186,7 @@ This command will:
 
 The verification of checksums and attestations should be handled externally before using this command. This approach allows for a clean separation of concerns, where:
 - Verification tools handle the security aspects
-- The `embed-checksums` command focuses solely on updating the config with pre-verified checksums
+- The `binst embed` command focuses solely on updating the config with pre‑verified checksums
 
 ## 4. Worked Example
 
@@ -240,7 +240,7 @@ The InstallSpec is designed to work with a two-step workflow:
 Additionally, a utility command is provided to embed checksums into an existing config:
 
 ```bash
-binstaller embed-checksums --config .binstaller.yml --checksum-file SHA256SUMS --version v1.2.3
+binst embed --config .binstaller.yml --checksum-file SHA256SUMS --version v1.2.3
 ```
 
 This separation provides several benefits:

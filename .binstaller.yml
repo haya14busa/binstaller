@@ -1,0 +1,14 @@
+schema: v1
+name: sigspy
+repo: actionutils/sigspy
+default_version: latest
+asset:
+    template: ${NAME}_${OS}_${ARCH}.tar.gz # Removed ${VERSION}
+    naming_convention:
+        os: titlecase # Corrected casing for OS
+        arch: lowercase
+checksums:
+    template: checksums.txt
+    algorithm: sha256
+unpack:
+    strip_components: 0

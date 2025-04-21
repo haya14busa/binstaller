@@ -92,7 +92,7 @@ resolve_asset_filename() {
 
 execute() {
   STRIP_COMPONENTS={{ if .Unpack }}{{ .Unpack.StripComponents | default 0 }}{{ else }}0{{ end }}
-  CHECKSUM_FILENAME="{{ .Checksums.Template }}"
+  CHECKSUM_FILENAME="{{ if .Checksums }}{{ .Checksums.Template }}{{ end }}"
 
   # --- Construct URLs ---
   GITHUB_DOWNLOAD="https://github.com/${REPO}/releases/download"

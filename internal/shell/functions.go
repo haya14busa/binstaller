@@ -134,6 +134,7 @@ untar() {
 
   case "${tarball}" in
     *.tar.gz | *.tgz) tar --no-same-owner -xzf "${tarball}" ${strip_components_flag} ;;
+    *.tar.xz) tar --no-same-owner -xJf "${tarball}" ${strip_components_flag} ;;
     *.tar) tar --no-same-owner -xf "${tarball}" ${strip_components_flag} ;;
     *.zip)
        # unzip doesn't have a standard --strip-components

@@ -141,7 +141,7 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 		}
 
 		// Infer NamingConvention from the asset template
-		if strings.Contains(archive.NameTemplate, "{{- title .Os }}") {
+		if strings.Contains(archive.NameTemplate, "title .Os") {
 			s.Asset.NamingConvention = &spec.NamingConvention{
 				OS: "titlecase",
 				// Arch is assumed lowercase unless a complex template suggests otherwise,
@@ -161,17 +161,21 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 		if len(archive.FormatOverrides) > 0 {
 			s.Asset.Rules = make([]spec.AssetRule, 0, len(archive.FormatOverrides))
 			for _, override := range archive.FormatOverrides {
-				ext := formatToExtension(override.Format)
+				format := override.Format
+				if len(override.Formats) > 0 {
+					format = override.Formats[0]
+				}
+				ext := formatToExtension(format)
 				// Only add rule if it results in a meaningful extension override
 				// or explicitly sets format to binary (empty ext)
-				if ext != "" || override.Format == "binary" {
+				if ext != "" || format == "binary" {
 					rule := spec.AssetRule{
 						When: spec.PlatformCondition{OS: override.Goos},
 						Ext:  ext,
 					}
 					s.Asset.Rules = append(s.Asset.Rules, rule)
 				} else {
-					log.Warnf("Ignoring format override for os '%s' with unknown format '%s'", override.Goos, override.Format)
+					log.Warnf("Ignoring format override for os '%s' with unknown format '%s'", override.Goos, format)
 				}
 			}
 		}

@@ -33,8 +33,6 @@ type AssetConfig struct {
 	Template         string            `yaml:"template"`                    // Filename template
 	DefaultExtension string            `yaml:"default_extension,omitempty"` // Default: ".tar.gz"
 	Rules            []AssetRule       `yaml:"rules,omitempty"`
-	OSAlias          map[string]string `yaml:"os_alias,omitempty"`   // e.g., { "darwin": "macOS" }
-	ArchAlias        map[string]string `yaml:"arch_alias,omitempty"` // e.g., { "amd64": "x86_64" }
 	NamingConvention *NamingConvention `yaml:"naming_convention,omitempty"`
 }
 
@@ -42,6 +40,8 @@ type AssetConfig struct {
 type AssetRule struct {
 	When     PlatformCondition `yaml:"when"`
 	Template string            `yaml:"template,omitempty"` // Optional override template
+	OS       string            `yaml:"os,omitempty"`       // Optional override OS
+	Arch     string            `yaml:"arch,omitempty"`     // Optional override ARCH
 	Ext      string            `yaml:"ext,omitempty"`      // Optional override extension
 }
 

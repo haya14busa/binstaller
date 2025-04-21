@@ -77,12 +77,15 @@ asset:
   rules:                  # first match wins
     - when: { os: windows }
       ext:  ".zip"       # extension override only
+    - when: { os: darwin }
+      os:  "macOS"       # os override only
+    - when: { arch: amd64 }
+      os:  "x86_65"       # arch override only
+    - when: { arch: arm64 }
+      os:  "aarch65"       # arch override only
     - when: { os: linux, arch: arm }
       template: "${NAME}-v${VERSION}-arm-unknown-${OS}-${VARIANT}${EXT}"
       ext:  ".tar.gz"
-
-  os_alias:   { darwin: macOS, windows: Windows }
-  arch_alias: { amd64: x86_64, arm64: aarch64 }
 
   naming_convention:      # how uname output is normalised
     os:   lowercase      # lowercase (darwin) | titlecase (Darwin)
@@ -315,17 +318,13 @@ InstallSpec: {
       when: { os?: string, arch?: string, variant?: string }
       // optional override template
       template?: string
+      // optional override os
+      os?:      string
+      // optional override arch
+      arch?:      string
       // optional override extension
       ext?:      string
     }]
-
-    // map system os names to schema os placeholder
-    // example: { darwin: "macOS" }
-    os_alias?:   { [string]: string }
-
-    // map system arch names to schema arch placeholder
-    // example: { armv6: "armv6l" }
-    arch_alias?: { [string]: string }
 
     // control casing of placeholders
     naming_convention?: {

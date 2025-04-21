@@ -30,7 +30,8 @@ type VariantConfig struct {
 
 // AssetConfig describes how to construct download URLs and names.
 type AssetConfig struct {
-	Template         string            `yaml:"template"` // Filename template
+	Template         string            `yaml:"template"`                    // Filename template
+	DefaultExtension string            `yaml:"default_extension,omitempty"` // Default: ".tar.gz"
 	Rules            []AssetRule       `yaml:"rules,omitempty"`
 	OSAlias          map[string]string `yaml:"os_alias,omitempty"`   // e.g., { "darwin": "macOS" }
 	ArchAlias        map[string]string `yaml:"arch_alias,omitempty"` // e.g., { "amd64": "x86_64" }
@@ -96,6 +97,9 @@ func (s *InstallSpec) SetDefaults() {
 			detect := true
 			s.Variant.Detect = &detect
 		}
+	}
+	if s.Asset.DefaultExtension == "" {
+		s.Asset.DefaultExtension = ".tar.gz"
 	}
 	if s.Asset.NamingConvention == nil {
 		s.Asset.NamingConvention = &NamingConvention{}

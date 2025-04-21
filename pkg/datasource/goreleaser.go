@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"text/template" // Added import
 
 	"github.com/apex/log"
 	"github.com/goreleaser/goreleaser/v2/pkg/config"
@@ -73,9 +74,8 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 		log.Debugf("Using name override: %s", s.Name)
 	} else if project.ProjectName != "" {
 		s.Name = project.ProjectName
-	} else {
-		log.Warnf("goreleaser project_name missing. Use --name flag.")
 	}
+	// Name inference from Repo will happen after Repo is determined
 
 	// Determine Repo: Override > release.github > release.gitea
 	if repoOverride != "" {
@@ -89,6 +89,20 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 	} else {
 		// TODO: Attempt to infer from git remote if sourceInfo is a local file in a git repo
 		log.Warnf("could not determine repository owner/name from goreleaser config or override. Use --repo flag.")
+	}
+
+	// If name was not determined yet, try to infer from the repository name
+	if s.Name == "" && s.Repo != "" {
+		parts := strings.Split(s.Repo, "/")
+		if len(parts) == 2 && parts[1] != "" {
+			s.Name = parts[1]
+			log.Infof("goreleaser project_name missing, inferred name from repository: %s", s.Name)
+		} else {
+			log.Warnf("goreleaser project_name missing and could not infer name from repository '%s'. Use --name flag.", s.Repo)
+		}
+	} else if s.Name == "" {
+		// If name is still empty and repo is also empty
+		log.Warnf("goreleaser project_name missing and could not infer name from repository. Use --name flag.")
 	}
 
 	// --- Checksums ---
@@ -108,6 +122,10 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 	if len(project.Archives) > 0 {
 		archive := project.Archives[0] // Focus on the first archive
 
+		// Map default archive format to DefaultExtension
+		s.Asset.DefaultExtension = formatToExtension(archive.Format)
+		log.Debugf("Mapped default archive format '%s' to DefaultExtension '%s'", archive.Format, s.Asset.DefaultExtension)
+
 		// Asset Template
 		assetTemplate, err := translateTemplate(archive.NameTemplate)
 		if err != nil {
@@ -115,6 +133,29 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 			assetTemplate = archive.NameTemplate // Fallback to raw
 		}
 		s.Asset.Template = assetTemplate
+
+		// Ensure the asset template includes the ${EXT} placeholder as per InstallSpec v1
+		if !strings.HasSuffix(s.Asset.Template, "${EXT}") {
+			s.Asset.Template += "${EXT}"
+			log.Debugf("Appended ${EXT} to asset template: %s", s.Asset.Template)
+		}
+
+		// Infer NamingConvention from the asset template
+		if strings.Contains(archive.NameTemplate, "{{- title .Os }}") {
+			s.Asset.NamingConvention = &spec.NamingConvention{
+				OS: "titlecase",
+				// Arch is assumed lowercase unless a complex template suggests otherwise,
+				// which is too complex to infer reliably here.
+				Arch: "lowercase", // Default, explicitly set for clarity
+			}
+			log.Debugf("Inferred OS naming convention as 'titlecase' from template: %s", archive.NameTemplate)
+		} else {
+			// If no explicit title casing for OS, rely on spec.SetDefaults for lowercase
+			s.Asset.NamingConvention = &spec.NamingConvention{
+				OS:   "lowercase", // Default, explicitly set for clarity
+				Arch: "lowercase", // Default, explicitly set for clarity
+			}
+		}
 
 		// Asset Rules (Format Overrides)
 		if len(archive.FormatOverrides) > 0 {
@@ -147,14 +188,13 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 
 	} else {
 		log.Warnf("no archives found in goreleaser config, asset information may be incomplete")
-		s.Asset.Template = "${NAME}_${VERSION}_${OS}_${ARCH}" // A basic default
+		s.Asset.Template = "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}" // A basic default
 	}
 
 	// --- Supported Platforms (from Builds) ---
 	s.SupportedPlatforms = deriveSupportedPlatforms(project.Builds) // Pass the whole slice
 
-	// TODO: Map NamingConvention based on goreleaser settings? (e.g., archive template analysis)
-	// TODO: Map Aliases based on goreleaser settings? (e.g., archive template analysis)
+	// TODO: Map Aliases based on goreleaser settings? (e.g., archive template analysis) - Complex, requires deeper template parsing.
 	// TODO: Map Variants? GoReleaser doesn't have a direct concept, might need heuristics or manual spec editing.
 	// TODO: Map Attestation? Not directly in goreleaser config.
 
@@ -186,18 +226,21 @@ func formatToExtension(format string) string {
 }
 
 // deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.
+// deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.
 func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept slice
 	platforms := make(map[string]spec.Platform) // Use map to deduplicate
 
-	for _, build := range builds { // Iterate through all builds
-		// Create ignore map for this build
-		ignore := make(map[string]bool)
+	// Collect all ignore rules from all builds into a single map
+	ignore := make(map[string]bool)
+	for _, build := range builds {
 		for _, ignoredBuild := range build.Ignore {
 			platformKey := makePlatformKey(ignoredBuild.Goos, ignoredBuild.Goarch, ignoredBuild.Goarm)
 			ignore[platformKey] = true
 		}
+	}
 
-		// Iterate through target platforms for this build
+	// Iterate through target platforms for all builds and add if not ignored
+	for _, build := range builds {
 		for _, goos := range build.Goos {
 			for _, goarch := range build.Goarch {
 				if goarch == "arm" {
@@ -219,7 +262,7 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept
 				}
 			}
 		}
-	} // End loop through builds
+	}
 
 	// Convert map to slice
 	result := make([]spec.Platform, 0, len(platforms))
@@ -240,33 +283,54 @@ func makePlatformKey(goos, goarch, goarm string) string {
 	return key
 }
 
-// translateTemplate converts common GoReleaser template variables to ${VAR} format.
-// This is a basic implementation and won't handle complex conditionals.
+// translateTemplate converts the given name template to its equivalent in InstallSpec format.
+// It uses text/template to evaluate the GoReleaser template syntax.
 func translateTemplate(tmpl string) (string, error) {
-	r := strings.NewReplacer(
-		"{{ .ProjectName }}", "${NAME}",
-		"{{ .Binary }}", "${NAME}", // Assume Binary maps to spec Name
-		"{{ .Version }}", "${VERSION}",
-		"{{ .Tag }}", "${TAG}",
-		"{{ .Os }}", "${OS}",
-		"{{ .Arch }}", "${ARCH}",
-		"{{ .Arm }}", "${VARIANT}", // Map Arm to VARIANT (simplification)
-		"{{ .Amd64 }}", "${VARIANT}", // Map Amd64 to VARIANT (simplification)
-		// Handle title case used in older goreleaser versions/examples
-		"{{- title .Os }}", "${OS}",
-		"{{- title .Arch }}", "${ARCH}",
-		// Handle common conditionals approximately
-		// '{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}' -> '${ARCH}' (rely on alias map)
-		// '{{ if .Arm }}v{{ .Arm }}{{ end }}' -> '${VARIANT}'
-	)
-	result := r.Replace(tmpl)
-
-	// Basic check for remaining Go template syntax - very rudimentary
-	if strings.Contains(result, "{{") || strings.Contains(result, "}}") {
-		log.Warnf("Template '%s' may still contain unhandled Go template syntax after translation: %s", tmpl, result)
-		// Return the partially translated string anyway
+	// Define the variable mapping from GoReleaser template variables to InstallSpec placeholders
+	varmap := map[string]string{
+		"ProjectName": "${NAME}",
+		"Binary":      "${NAME}", // Assume Binary maps to spec Name
+		"Version":     "${VERSION}",
+		"Tag":         "${TAG}",
+		"Os":          "${OS}",
+		"Arch":        "${ARCH}",
+		"Arm":         "",        // Map Arm to empty string as per InstallSpec v1
+		"Mips":        "",        // Mips not directly mapped to a standard placeholder
+		"Amd64":       "${ARCH}", // Amd64 maps to ARCH
 	}
-	return result, nil
+
+	// Create a function map for the template engine
+	funcMap := template.FuncMap{
+		"title": func(s string) string {
+			// We intentionally don't use strings.Title or cases.Title here
+			// because it can cause issues with template variables like ${OS}.
+			// If we transform "OS" to "Os", the shell script will break.
+			// We return the original string to preserve the casing for the placeholder.
+			return s
+		},
+		"tolower": strings.ToLower,
+		"toupper": strings.ToUpper,
+		"trim":    strings.TrimSpace,
+		// Add other functions as needed based on common goreleaser templates
+		"replace":    strings.ReplaceAll, // Added replace function based on common usage
+		"trimprefix": strings.TrimPrefix, // Added trimprefix
+		"trimsuffix": strings.TrimSuffix, // Added trimsuffix
+	}
+
+	// Parse the template
+	t, err := template.New("template").Funcs(funcMap).Parse(tmpl)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse template: %s", tmpl)
+	}
+
+	// Execute the template with the variable map
+	var buf bytes.Buffer
+	err = t.Execute(&buf, varmap)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to execute template: %s", tmpl)
+	}
+
+	return buf.String(), nil
 }
 
 // --- Helper functions adapted from main.go ---
@@ -292,12 +356,12 @@ func loadGoReleaserConfig(repo, file, commitHash string) (project *config.Projec
 		project, sourceInfo, err = loadFromGitHub(repo, configPath, commitHash)
 		if err == nil {
 			log.Infof("successfully loaded config from github: %s", sourceInfo)
-			return project, sourceInfo, nil
-		}
-		log.Warnf("failed to load config from github repo %s (path: %s): %v. Falling back to local file if specified.", repo, configPath, err)
-		// Fall through to try local file if repo loading failed *and* a local file is specified
-		if file == "" {
-			return nil, "", errors.Wrapf(err, "failed to load config from github repo %s and no local file specified", repo)
+		} else {
+			log.Warnf("failed to load config from github repo %s (path: %s): %v. Falling back to local file if specified.", repo, configPath, err)
+			// Fall through to try local file if repo loading failed *and* a local file is specified
+			if file == "" {
+				return nil, "", errors.Wrapf(err, "failed to load config from github repo %s and no local file specified", repo)
+			}
 		}
 	}
 
@@ -331,7 +395,6 @@ func loadFromGitHub(repo, configPath, specifiedCommitHash string) (*config.Proje
 		return nil, "", errors.New("config path within repository must be specified")
 	}
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, commitHash, configPath)
-
 	log.Infof("fetching config from URL: %s", url)
 	resp, err := http.Get(url) // Basic GET, no token handling yet
 	if err != nil {

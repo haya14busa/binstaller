@@ -3,9 +3,10 @@ name: sigspy
 repo: actionutils/sigspy
 default_version: latest
 asset:
-    template: ${NAME}_${OS}_${ARCH}.tar.gz # Removed ${VERSION}
+    template: ${NAME}_${OS}_${ARCH}${EXT}
+    default_extension: .tar.gz
     naming_convention:
-        os: titlecase # Corrected casing for OS
+        os: titlecase
         arch: lowercase
 checksums:
     template: checksums.txt

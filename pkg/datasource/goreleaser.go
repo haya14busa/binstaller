@@ -294,9 +294,9 @@ func translateTemplate(tmpl string) (string, error) {
 		"Tag":         "${TAG}",
 		"Os":          "${OS}",
 		"Arch":        "${ARCH}",
-		"Arm":         "",        // Map Arm to empty string as per InstallSpec v1
-		"Mips":        "",        // Mips not directly mapped to a standard placeholder
-		"Amd64":       "${ARCH}", // Amd64 maps to ARCH
+		"Arm":         "", // Map Arm to empty string as per InstallSpec v1
+		"Mips":        "", // Mips not directly mapped to a standard placeholder
+		"Amd64":       "", // Amd64 maps to ARCH
 	}
 
 	// Create a function map for the template engine
@@ -339,32 +339,6 @@ func translateTemplate(tmpl string) (string, error) {
 // It tries loading from a GitHub repo first, then falls back to a local file.
 // commitHash is currently unused but kept for potential future use.
 func loadGoReleaserConfig(repo, file, commitHash string) (project *config.Project, sourceInfo string, err error) {
-	// Try loading from GitHub first if repo is provided
-	if repo != "" {
-		repo = normalizeRepo(repo)
-		log.Infof("attempting to load goreleaser config from github repo: %s", repo)
-		// Determine the config path within the repo (use file if provided, else default search)
-		configPath := file
-		if configPath == "" {
-			// If file is not specified for the repo, we need to check default locations
-			// This requires fetching repo contents or using default names.
-			// For now, assume default .goreleaser.yml if path is empty.
-			// TODO: Implement proper default config file discovery for GitHub repos.
-			configPath = ".goreleaser.yml"
-			log.Infof("no specific config file path provided for repo, trying default: %s", configPath)
-		}
-		project, sourceInfo, err = loadFromGitHub(repo, configPath, commitHash)
-		if err == nil {
-			log.Infof("successfully loaded config from github: %s", sourceInfo)
-		} else {
-			log.Warnf("failed to load config from github repo %s (path: %s): %v. Falling back to local file if specified.", repo, configPath, err)
-			// Fall through to try local file if repo loading failed *and* a local file is specified
-			if file == "" {
-				return nil, "", errors.Wrapf(err, "failed to load config from github repo %s and no local file specified", repo)
-			}
-		}
-	}
-
 	// Try loading from local file if file is provided
 	if file != "" {
 		log.Infof("attempting to load goreleaser config from local file: %s", file)
@@ -373,10 +347,28 @@ func loadGoReleaserConfig(repo, file, commitHash string) (project *config.Projec
 			log.Infof("successfully loaded config from local file: %s", sourceInfo)
 			return project, sourceInfo, nil
 		}
-		return nil, "", errors.Wrapf(err, "failed to load config from local file %s", file)
+		log.Warnf("failed to load config from local file %s: %v", file, err)
 	}
 
-	return nil, "", errors.New("neither repository nor file specified for goreleaser config")
+	// Try loading from GitHub
+	if repo != "" {
+		repo = normalizeRepo(repo)
+		log.Infof("attempting to load goreleaser config from github repo: %s", repo)
+		for _, configPath := range []string{file, "goreleaser.yml", ".goreleaser.yml", "goreleaser.yaml", ".goreleaser.yaml"} {
+			if configPath == "" {
+				continue
+			}
+			project, sourceInfo, err = loadFromGitHub(repo, configPath, commitHash)
+			if err == nil {
+				log.Infof("successfully loaded config from github: %s", sourceInfo)
+				return project, sourceInfo, nil
+			} else {
+				log.Warnf("failed to load config from github repo %s (path: %s): %v", repo, configPath, err)
+			}
+		}
+	}
+
+	return nil, "", errors.New("failed to load goreleaser config")
 }
 
 // loadFromGitHub loads a project configuration from a GitHub repository.

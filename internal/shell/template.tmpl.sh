@@ -27,7 +27,6 @@ EOF
 {{ .UntarFunction }}
 
 parse_args() {
-  # Default values
   BINDIR="./bin"
   while getopts "b:dt:h?x" arg; do
     case "$arg" in
@@ -175,8 +174,8 @@ log_prefix() {
 parse_args "$@"
 
 # --- Determine target platform ---
-OS=$(uname_os)
-ARCH=$(uname_arch)
+OS="${BINSTALLER_OS:-$(uname_os)}"
+ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_OS="${OS}"
 UNAME_ARCH="${ARCH}"
 log_info "Detected Platform: ${OS}/${ARCH}"

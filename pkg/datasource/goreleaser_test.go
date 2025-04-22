@@ -435,7 +435,7 @@ checksum:
 			Template:         expectedTemplate + "${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
 			Rules: []spec.AssetRule{
-				{When: spec.PlatformCondition{Arch: "amd64"}, Arch: "x86"},
+				{When: spec.PlatformCondition{Arch: "amd64"}, Arch: "x86_64"},
 				{When: spec.PlatformCondition{Arch: "386"}, Arch: "i386"},
 			},
 			NamingConvention: &spec.NamingConvention{

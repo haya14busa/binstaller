@@ -176,7 +176,7 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		// Asset Rules (Arch)
 		for _, m := range archRegex.FindAllStringSubmatch(archive.NameTemplate, -1) {
 			if len(m) == 3 && m[1] != "" && m[2] != "" {
-				log.Debugf("Inferred Arch name alias (%s -> %s) from template: %s", m[1], m[2], archive.NameTemplate)
+				log.Debugf("Inferred Arch name alias (%s -> %s) from template: %s", m[1], m[2], m[0])
 				s.Asset.Rules = append(s.Asset.Rules, spec.AssetRule{
 					When: spec.PlatformCondition{Arch: m[1]},
 					Arch: m[2],
@@ -187,7 +187,7 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		// Asset Rules (OS)
 		for _, m := range osRegex.FindAllStringSubmatch(archive.NameTemplate, -1) {
 			if len(m) == 3 && m[1] != "" && m[2] != "" {
-				log.Debugf("Inferred OS name alias (%s -> %s) from template: %s", m[1], m[2], archive.NameTemplate)
+				log.Debugf("Inferred OS name alias (%s -> %s) from template: %s", m[1], m[2], m[0])
 				s.Asset.Rules = append(s.Asset.Rules, spec.AssetRule{
 					When: spec.PlatformCondition{OS: m[1]},
 					OS:   m[2],

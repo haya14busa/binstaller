@@ -1,9 +1,3 @@
-package shell
-
-// shellFunctions contains the library of POSIX shell functions.
-// Adapted from https://github.com/client9/shlib
-const shellFunctions = `
-# --- Shell Functions (from shlib) ---
 cat /dev/null <<EOF
 ------------------------------------------------------------------------
 https://github.com/client9/shlib - portable posix shell functions
@@ -255,57 +249,8 @@ github_release() {
     return 0
   fi
 }
-hash_sha256() {
-  TARGET=${1:-/dev/stdin}
-  if is_command gsha256sum; then
-    hash=$(gsha256sum "$TARGET") || return 1
-    echo "$hash" | cut -d ' ' -f 1
-  elif is_command sha256sum; then
-    hash=$(sha256sum "$TARGET") || return 1
-    echo "$hash" | cut -d ' ' -f 1
-  elif is_command shasum; then
-    hash=$(shasum -a 256 "$TARGET" 2>/dev/null) || return 1
-    echo "$hash" | cut -d ' ' -f 1
-  elif is_command openssl; then
-    # Note: openssl output format can vary. Adjust parsing as needed.
-    # Example for some versions: "SHA256(filename)= hash"
-    hash=$(openssl dgst -sha256 "$TARGET") || return 1
-    # Try to extract the hash, assuming it's the last field
-    echo "$hash" | awk '{print $NF}'
-  else
-    log_crit "hash_sha256 unable to find command to compute sha-256 hash"
-    return 1
-  fi
-}
-hash_sha256_verify() {
-  TARGET=$1
-  checksums=$2 # This is the checksum file path
-  # TODO: Adapt for embedded checksums from spec.Checksums.EmbeddedChecksums
-  if [ -z "$checksums" ]; then
-    log_err "hash_sha256_verify checksum file not specified"
-    return 1
-  fi
-  BASENAME=${TARGET##*/}
-  # Use awk for potentially more robust parsing than grep | cut
-  # Match format "hash<space(s)>filename" or "hash<space(s)>*filename" (for BSD sum)
-  want=$(awk -v filename="${BASENAME}" '{ if ($2 == filename || $2 == "*" filename) { print $1; exit } }' "${checksums}")
-
-  if [ -z "$want" ]; then
-    log_err "hash_sha256_verify unable to find checksum for '${BASENAME}' in '${checksums}'"
-    return 1
-  fi
-  got=$(hash_sha256 "$TARGET")
-  if [ "$want" != "$got" ]; then
-    log_err "hash_sha256_verify checksum for '$TARGET' did not verify."
-    log_err "Expected: $want"
-    log_err "Got:      $got"
-    return 1
-  fi
-  log_info "Checksum verified for ${TARGET}"
-}
 cat /dev/null <<EOF
 ------------------------------------------------------------------------
 End of functions from https://github.com/client9/shlib
 ------------------------------------------------------------------------
 EOF
-`

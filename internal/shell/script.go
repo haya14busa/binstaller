@@ -22,6 +22,7 @@ type templateData struct {
 	BinstallerVersion string // Version of the binstaller tool generating the script
 	SourceInfo        string // Information about the source of the spec (e.g., file path, git commit)
 	ShellFunctions    string // The content of the shell function library
+	HashFunctions     string
 }
 
 // Generate creates the installer shell script content based on the InstallSpec.
@@ -33,22 +34,25 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 	// Apply spec defaults first - this is still useful for the spec structure itself
 	installSpec.SetDefaults()
 
+	hashFunc := hashSHA256
+	if installSpec.Checksums != nil && installSpec.Checksums.Algorithm == "sha1" {
+		hashFunc = hashSHA1
+	}
+
 	// --- Prepare Template Data ---
 	// Only pass static data known at generation time, plus the shell functions
 	data := templateData{
 		InstallSpec:       installSpec,
 		BinstallerVersion: "dev",             // TODO: Get actual version
 		SourceInfo:        "binstaller spec", // TODO: Pass source info down if available from adapter
-		ShellFunctions:    shellFunctions,    // Pass the shell functions as data (from functions.go)
+		ShellFunctions:    shellFunctions,
+		HashFunctions:     hashFunc,
 	}
 
 	// --- Prepare Template ---
 	// The template now needs to contain the logic for runtime detection and asset resolution
 	// It will include {{ .ShellFunctions }} explicitly.
 	funcMap := createFuncMap() // Keep helper funcs like default, tolower etc.
-	// Remove the raw template helper functions from the funcMap as they are no longer needed
-	delete(funcMap, "rawAssetTemplate")
-	delete(funcMap, "rawChecksumTemplate")
 
 	tmpl, err := template.New("installer").Funcs(funcMap).Parse(mainScriptTemplate) // Parse only the main template
 	if err != nil {

@@ -14,6 +14,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/goreleaser/goreleaser/v2/pkg/config"
+	gorelcontext "github.com/goreleaser/goreleaser/v2/pkg/context"
+	"github.com/goreleaser/goreleaser/v2/pkg/defaults"
 	"github.com/haya14busa/goinstaller/pkg/spec"
 	"github.com/pkg/errors"
 )
@@ -55,6 +57,15 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load goreleaser config")
 	}
+
+	gorelCtx := gorelcontext.New(*project)
+	for _, defaulter := range defaults.Defaulters {
+		log.Debugf("setting defaults for %s", defaulter)
+		if err := defaulter.Default(gorelCtx); err != nil {
+			return nil, errors.Wrap(err, "failed to set defaults")
+		}
+	}
+	project = &gorelCtx.Config
 
 	// Map goreleaser config.Project to spec.InstallSpec, passing overrides
 	installSpec, err := mapToGoInstallerSpec(project, nameOverride, repoOverride)
@@ -281,7 +292,7 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform {
 				if goarch == "arm" {
 					for _, goarm := range build.Goarm {
 						platformKey := makePlatformKey(goos, goarch, goarm)
-						if !ignore[platformKey] {
+						if !ignore[platformKey] && isValidTarget(goos, goarch) {
 							// Map arm version to Arch field directly for simplicity now
 							// e.g., linux/arm/6 -> {OS: linux, Arch: armv6}
 							platforms[platformKey] = spec.Platform{OS: goos, Arch: goarch + "v" + goarm}
@@ -289,7 +300,7 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform {
 					}
 				} else {
 					platformKey := makePlatformKey(goos, goarch, "")
-					if !ignore[platformKey] {
+					if !ignore[platformKey] && isValidTarget(goos, goarch) {
 						platforms[platformKey] = spec.Platform{OS: goos, Arch: goarch}
 					}
 				}

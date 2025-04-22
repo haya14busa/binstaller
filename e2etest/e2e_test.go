@@ -44,13 +44,13 @@ func TestMain(m *testing.M) {
 // testInstallScript tests that the binstaller tool can generate a working
 // installation script for the specified repository and that the script
 // can successfully install the binary.
-func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
+func testInstallScript(t *testing.T, repo, binaryName, versionFlag, sha string) {
 	// Create a temporary directory for all test artifacts
 	tempDir := t.TempDir()
 
 	// Init binstaller config
 	configPath := filepath.Join(tempDir, binaryName+".binstaller.yml")
-	initCmd := exec.Command(binstallerPath, "init", "--verbose", "--source=goreleaser", "--repo", repo, "-o", configPath)
+	initCmd := exec.Command(binstallerPath, "init", "--verbose", "--source=goreleaser", "--repo", repo, "-o", configPath, "--sha", sha)
 	initCmd.Stderr = os.Stderr
 	if err := initCmd.Run(); err != nil {
 		t.Fatalf("Failed to init binstaller config: %v", err)
@@ -110,21 +110,21 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 }
 
 func TestReviewdogE2E(t *testing.T) {
-	testInstallScript(t, "reviewdog/reviewdog", "reviewdog", "-version")
+	testInstallScript(t, "reviewdog/reviewdog", "reviewdog", "-version", "7e05fa3e78ba7f2be4999ca2d35b00a3fd92a783")
 }
 
 func TestGoreleaserE2E(t *testing.T) {
-	testInstallScript(t, "goreleaser/goreleaser", "goreleaser", "--version")
+	testInstallScript(t, "goreleaser/goreleaser", "goreleaser", "--version", "79c76c229d50ca45ef77afa1745df0a0e438d237")
 }
 
 func TestGhSetupE2E(t *testing.T) {
-	testInstallScript(t, "k1LoW/gh-setup", "gh-setup", "--help")
+	testInstallScript(t, "k1LoW/gh-setup", "gh-setup", "--help", "a2359e4bcda8af5d7e16e1b3fb0eeec1be267e63")
 }
 
 func TestSigspyE2E(t *testing.T) {
-	testInstallScript(t, "actionutils/sigspy", "sigspy", "--help")
+	testInstallScript(t, "actionutils/sigspy", "sigspy", "--help", "3e1c6f32072cd4b8309d00bd31f498903f71c422")
 }
 
 func TestGolangciLintE2E(t *testing.T) {
-	testInstallScript(t, "golangci/golangci-lint", "golangci-lint", "--version")
+	testInstallScript(t, "golangci/golangci-lint", "golangci-lint", "--version", "6d2a94be6b20f1c06e95d79479c6fdc34a69c45f")
 }

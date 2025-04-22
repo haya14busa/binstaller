@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -17,11 +16,17 @@ import (
 )
 
 // goreleaserAdapter implements the SourceAdapter interface for GoReleaser config files.
-type goreleaserAdapter struct{}
+type goreleaserAdapter struct {
+	commit   string
+	filePath string
+}
 
 // NewGoReleaserAdapter creates a new adapter for GoReleaser sources.
-func NewGoReleaserAdapter() SourceAdapter {
-	return &goreleaserAdapter{}
+func NewGoReleaserAdapter(commit, filePath string) SourceAdapter {
+	return &goreleaserAdapter{
+		commit:   commit,
+		filePath: filePath,
+	}
 }
 
 // Detect generates an InstallSpec from a GoReleaser configuration file.
@@ -38,13 +43,13 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 		nameOverride = input.Flags["name"] // Get name override from flags map
 	}
 
-	project, sourceInfo, err := loadGoReleaserConfig(repoOverride, input.FilePath, "") // Pass repoOverride
+	project, err := loadGoReleaserConfig(repoOverride, input.FilePath, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load goreleaser config")
 	}
 
 	// Map goreleaser config.Project to spec.InstallSpec, passing overrides
-	installSpec, err := mapToGoInstallerSpec(project, sourceInfo, nameOverride, repoOverride)
+	installSpec, err := mapToGoInstallerSpec(project, nameOverride, repoOverride)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to map goreleaser config to InstallSpec")
 	}
@@ -52,13 +57,13 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 	// Apply InstallSpec defaults
 	installSpec.SetDefaults()
 
-	log.Infof("successfully detected InstallSpec from goreleaser source: %s", sourceInfo)
+	log.Info("successfully detected InstallSpec from goreleaser source")
 	return installSpec, nil
 }
 
 // mapToGoInstallerSpec converts a goreleaser config.Project to spec.InstallSpec.
 // It applies overrides for name and repo if provided.
-func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, repoOverride string) (*spec.InstallSpec, error) {
+func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride string) (*spec.InstallSpec, error) {
 	if project == nil {
 		return nil, errors.New("goreleaser project config is nil")
 	}
@@ -85,7 +90,6 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 		s.Repo = fmt.Sprintf("%s/%s", project.Release.Gitea.Owner, project.Release.Gitea.Name)
 		log.Warnf("detected Gitea repo, using it for spec.Repo")
 	} else {
-		// TODO: Attempt to infer from git remote if sourceInfo is a local file in a git repo
 		log.Warnf("could not determine repository owner/name from goreleaser config or override. Use --repo flag.")
 	}
 
@@ -196,7 +200,7 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 	// --- Supported Platforms (from Builds) ---
 	s.SupportedPlatforms = deriveSupportedPlatforms(project.Builds) // Pass the whole slice
 
-	log.Infof("initial mapping from goreleaser config complete (source: %s)", sourceInfo)
+	log.Infof("initial mapping from goreleaser config complete")
 	return s, nil
 }
 
@@ -272,7 +276,7 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept
 func makePlatformKey(goos, goarch, goarm string) string {
 	key := goos + "/" + goarch
 	if goarch == "arm" && goarm != "" {
-		key += goarm // Directly append arm version (e.g., linux/arm6, linux/arm7)
+		key += "v" + goarm // Directly append arm version (e.g., linux/armv6, linux/armv7)
 	}
 	return key
 }
@@ -327,19 +331,16 @@ func translateTemplate(tmpl string) (string, error) {
 	return buf.String(), nil
 }
 
-// --- Helper functions adapted from main.go ---
-
 // loadGoReleaserConfig loads a goreleaser project configuration.
-// It tries loading from a GitHub repo first, then falls back to a local file.
-// commitHash is currently unused but kept for potential future use.
-func loadGoReleaserConfig(repo, file, commitHash string) (project *config.Project, sourceInfo string, err error) {
+// It tries logading from a local file, then falls back to loading from a GitHub repo.
+func loadGoReleaserConfig(repo, file, commitHash string) (project *config.Project, err error) {
 	// Try loading from local file if file is provided
 	if file != "" {
 		log.Infof("attempting to load goreleaser config from local file: %s", file)
-		project, sourceInfo, err = loadFromFile(file)
+		project, err = loadFromFile(file)
 		if err == nil {
-			log.Infof("successfully loaded config from local file: %s", sourceInfo)
-			return project, sourceInfo, nil
+			log.Infof("successfully loaded config from local file: %s", file)
+			return project, nil
 		}
 		log.Warnf("failed to load config from local file %s: %v", file, err)
 	}
@@ -352,89 +353,71 @@ func loadGoReleaserConfig(repo, file, commitHash string) (project *config.Projec
 			if configPath == "" {
 				continue
 			}
-			project, sourceInfo, err = loadFromGitHub(repo, configPath, commitHash)
+			project, err = loadFromGitHub(repo, configPath, commitHash)
 			if err == nil {
-				log.Infof("successfully loaded config from github: %s", sourceInfo)
-				return project, sourceInfo, nil
+				log.Info("successfully loaded config from github")
+				return project, nil
 			} else {
 				log.Warnf("failed to load config from github repo %s (path: %s): %v", repo, configPath, err)
 			}
 		}
 	}
 
-	return nil, "", errors.New("failed to load goreleaser config")
+	return nil, errors.New("failed to load goreleaser config")
 }
 
 // loadFromGitHub loads a project configuration from a GitHub repository.
 // Adapted from main.go, simplified commit handling for now.
-func loadFromGitHub(repo, configPath, specifiedCommitHash string) (*config.Project, string, error) {
+func loadFromGitHub(repo, configPath, specifiedCommitHash string) (*config.Project, error) {
 	log.Infof("loading config for %s at path %s from github", repo, configPath)
 
-	// TODO: Re-implement commit hash logic if needed, using default branch for now.
-	commitHash := "HEAD" // Simplification: Use HEAD for now. Need default branch logic.
-	// defaultBranch := getDefaultBranch(repo) // Requires API call
-	// commitHash, err := getLatestCommitSHA(repo, defaultBranch) // Requires API call
+	commitHash := "HEAD"
+	if specifiedCommitHash != "" {
+		commitHash = specifiedCommitHash
+	}
 
 	// Construct the raw URL
-	// TODO: Handle cases where configPath is empty or needs discovery
 	if configPath == "" {
-		return nil, "", errors.New("config path within repository must be specified")
+		return nil, errors.New("config path within repository must be specified")
 	}
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, commitHash, configPath)
 	log.Infof("fetching config from URL: %s", url)
 	resp, err := http.Get(url) // Basic GET, no token handling yet
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to fetch config from %s", url)
+		return nil, errors.Wrapf(err, "failed to fetch config from %s", url)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, "", fmt.Errorf("failed to fetch config from %s: status %d", url, resp.StatusCode)
+		return nil, fmt.Errorf("failed to fetch config from %s: status %d", url, resp.StatusCode)
 	}
 
 	// Read the content into a buffer first to allow parsing and potential hashing later
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, resp.Body); err != nil {
-		return nil, "", errors.Wrap(err, "failed to read config content from response body")
+		return nil, errors.Wrap(err, "failed to read config content from response body")
 	}
-	contentBytes := buf.Bytes() // Keep bytes if needed for hashing sourceInfo
+	contentBytes := buf.Bytes()
 
 	// Parse the content using goreleaser's logic
 	project, err := config.LoadReader(bytes.NewReader(contentBytes)) // Pass only the reader
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to parse goreleaser config from github")
+		return nil, errors.Wrap(err, "failed to parse goreleaser config from github")
 	}
-
-	// Create the source info
-	// TODO: Use actual commit hash when implemented
-	sourceInfo := fmt.Sprintf("%s@%s:%s", repo, commitHash, configPath)
-	log.Infof("using source info: %s", sourceInfo)
-	return &project, sourceInfo, nil
+	return &project, nil
 }
 
 // loadFromFile loads a project configuration from a local file.
 // Adapted from main.go.
-func loadFromFile(file string) (*config.Project, string, error) {
+func loadFromFile(file string) (*config.Project, error) {
 	log.Infof("loading config from file %q", file)
-
-	// Get absolute path for better context
-	absPath, err := filepath.Abs(file)
-	if err != nil {
-		absPath = file // Fallback
-	}
-
 	// Parse the file using goreleaser's logic
 	project, err := config.Load(file) // Pass only the file path
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to parse goreleaser config from file %s", file)
+		return nil, errors.Wrapf(err, "failed to parse goreleaser config from file %s", file)
 	}
 
-	// Determine sourceInfo (simplified for now)
-	// TODO: Re-implement git commit/hash checking if needed for provenance
-	sourceInfo := absPath
-	log.Infof("using source info: %s", sourceInfo)
-
-	return &project, sourceInfo, nil
+	return &project, nil
 }
 
 // normalizeRepo cleans up a repository string.
@@ -446,6 +429,3 @@ func normalizeRepo(repo string) string {
 	repo = strings.Trim(repo, "/")
 	return repo
 }
-
-// TODO: Add functions for default branch/commit fetching if required later.
-// TODO: Add function to map goreleaser fields to AssetConfig rules, naming, aliases.

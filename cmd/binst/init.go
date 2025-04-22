@@ -18,6 +18,7 @@ var (
 	initRepo         string // Repo for GitHub source OR explicit override
 	initName         string // Explicit override for binary name
 	initTag          string
+	initCommitSHA    string
 	initAssetPattern string
 	initOutputFile   string
 )
@@ -30,15 +31,13 @@ var initCmd = &cobra.Command{
 settings from a source like a GoReleaser config file or a GitHub repository.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Running init command...")
-		log.Debugf("Source: %s, File: %s, Repo: %s, Tag: %s, Output: %s",
-			initSource, initSourceFile, initRepo, initTag, initOutputFile)
 
 		var adapter datasource.SourceAdapter
 		var input datasource.DetectInput
 
 		switch initSource {
 		case "goreleaser":
-			adapter = datasource.NewGoReleaserAdapter()
+			adapter = datasource.NewGoReleaserAdapter(initCommitSHA, initSourceFile)
 			input = datasource.DetectInput{
 				FilePath: initSourceFile,          // Path to .goreleaser.yml
 				Repo:     initRepo,                // Pass repo flag value
@@ -120,6 +119,7 @@ func init() {
 	initCmd.Flags().StringVar(&initRepo, "repo", "", "GitHub repository (owner/repo) for source 'goreleaser'/'github', or explicit override")
 	initCmd.Flags().StringVar(&initName, "name", "", "Explicit binary name override")
 	initCmd.Flags().StringVar(&initTag, "tag", "", "Release tag/ref to inspect (for source 'github')")
+	initCmd.Flags().StringVar(&initCommitSHA, "sha", "", "Commit SHA for source 'goreleaser'")
 	initCmd.Flags().StringVar(&initAssetPattern, "asset-pattern", "", "Template for asset file names (for source 'cli')") // TODO: Implement usage
 	initCmd.Flags().StringVarP(&initOutputFile, "output", "o", ".binstaller.yml", "Write spec to file instead of stdout (use '-' for stdout)")
 

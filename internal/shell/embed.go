@@ -8,14 +8,36 @@ import _ "embed"
 //go:embed template.sh
 var mainScriptTemplate string
 
+// shellFunctions contains the library of POSIX shell functions.
+// Adapted from https://github.com/client9/shlib
+//
+//go:embed shlib.sh
+var shellFunctions string
+
+/*
+shlib.sh generation command
+cat \
+  license.sh \
+  is_command.sh \
+  echoerr.sh \
+  log.sh \
+  uname_os.sh \
+  uname_arch.sh \
+  uname_os_check.sh \
+  uname_arch_check.sh \
+  http_download.sh \
+  github_release.sh \
+  license_end.sh | \
+  grep -v '^#' | grep -v ' #' | tr -s '\n'
+*/
+
+// --- Custom functions ---
+
 //go:embed hash_sha256.sh
 var hashSHA256 string
 
 //go:embed hash_sha1.sh
 var hashSHA1 string
 
-// shellFunctions contains the library of POSIX shell functions.
-// Adapted from https://github.com/client9/shlib
-//
-//go:embed shlib.sh
-var shellFunctions string
+//go:embed untar.sh
+var untar string

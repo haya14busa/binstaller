@@ -24,6 +24,8 @@ EOF
 
 {{ .HashFunctions }}
 
+{{ .UntarFunction }}
+
 parse_args() {
   # Default values
   BINDIR="./bin"

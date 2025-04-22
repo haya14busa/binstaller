@@ -23,6 +23,7 @@ type templateData struct {
 	SourceInfo        string // Information about the source of the spec (e.g., file path, git commit)
 	ShellFunctions    string // The content of the shell function library
 	HashFunctions     string
+	UntarFunction     string
 }
 
 // Generate creates the installer shell script content based on the InstallSpec.
@@ -47,6 +48,7 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 		SourceInfo:        "binstaller spec", // TODO: Pass source info down if available from adapter
 		ShellFunctions:    shellFunctions,
 		HashFunctions:     hashFunc,
+		UntarFunction:     untar,
 	}
 
 	// --- Prepare Template ---

@@ -13,7 +13,6 @@ echoerr() {
   echo "$@" 1>&2
 }
 log_prefix() {
-  # Default implementation - can be overridden by main script
   echo "$0"
 }
 _logp=6
@@ -59,16 +58,24 @@ log_crit() {
 uname_os() {
   os=$(uname -s | tr '[:upper:]' '[:lower:]')
   case "$os" in
-    cygwin_nt*) os="windows" ;;
+    msys*) os="windows" ;;
     mingw*) os="windows" ;;
-    msys_nt*) os="windows" ;;
+    cygwin*) os="windows" ;;
   esac
+  if [ "$os" = "sunos" ]; then
+    if [ $(uname -o) == "illumos" ]; then
+      os="illumos"
+    else
+      os="solaris"
+    fi
+  fi
   echo "$os"
 }
 uname_arch() {
   arch=$(uname -m)
   case $arch in
     x86_64) arch="amd64" ;;
+    i86pc) arch="amd64" ;;
     x86) arch="386" ;;
     i686) arch="386" ;;
     i386) arch="386" ;;
@@ -87,11 +94,13 @@ uname_os_check() {
     freebsd) return 0 ;;
     linux) return 0 ;;
     android) return 0 ;;
+    midnightbsd) return 0 ;;
     nacl) return 0 ;;
     netbsd) return 0 ;;
     openbsd) return 0 ;;
     plan9) return 0 ;;
     solaris) return 0 ;;
+    illumos) return 0 ;;
     windows) return 0 ;;
   esac
   log_crit "uname_os_check '$(uname -s)' got converted to '$os' which is not a GOOS value. Please file bug at https://github.com/client9/shlib"
@@ -118,93 +127,41 @@ uname_arch_check() {
   log_crit "uname_arch_check '$(uname -m)' got converted to '$arch' which is not a GOARCH value.  Please file bug report at https://github.com/client9/shlib"
   return 1
 }
-untar() {
-  tarball=$1
-  strip_components=${2:-0} # Second argument is strip_components, default 0
-  strip_components_flag=""
-  if [ "$strip_components" -gt 0 ]; then
-   strip_components_flag="--strip-components=${strip_components}"
-  fi
-
-  case "${tarball}" in
-    *.tar.gz | *.tgz) tar --no-same-owner -xzf "${tarball}" ${strip_components_flag} ;;
-    *.tar.xz) tar --no-same-owner -xJf "${tarball}" ${strip_components_flag} ;;
-    *.tar) tar --no-same-owner -xf "${tarball}" ${strip_components_flag} ;;
-    *.zip)
-       # unzip doesn't have a standard --strip-components
-       # Workaround: extract to a subdir and move contents up if stripping
-       if [ "$strip_components" -gt 0 ]; then
-          extract_dir=$(basename "${tarball%.zip}")_extracted
-          unzip "${tarball}" -d "${extract_dir}"
-          # Move contents of the *first* directory found inside extract_dir up
-          # This assumes wrap_in_directory=true convention
-          first_subdir=$(find "${extract_dir}" -mindepth 1 -maxdepth 1 -type d -print -quit)
-          if [ -n "$first_subdir" ]; then
-             # Move all contents (* includes hidden files)
-             mv "${first_subdir}"/* .
-             # Optionally remove the now-empty subdir and the extract_dir
-             rmdir "${first_subdir}"
-             rmdir "${extract_dir}"
-          else
-             log_warn "Could not find subdirectory in zip to strip components from ${extract_dir}"
-             # Files are extracted in current dir anyway, proceed
-          fi
-       else
-          unzip "${tarball}"
-       fi
-       ;;
-    *)
-      log_err "untar unknown archive format for ${tarball}"
-      return 1
-      ;;
-  esac
-}
 http_download_curl() {
   local_file=$1
   source_url=$2
   header=$3
   if [ -z "$header" ]; then
-    code=$(curl -w '%{http_code}' -sL -o "$local_file" "$source_url")
+    curl -fsSL -o "$local_file" "$source_url"
   else
-    code=$(curl -w '%{http_code}' -sL -H "$header" -o "$local_file" "$source_url")
+    curl -fsSL -H "$header" -o "$local_file" "$source_url"
   fi
-  if [ "$code" != "200" ]; then
-    log_debug "http_download_curl received HTTP status $code"
-    # Attempt to print error from body if available
-    if [ -f "$local_file" ]; then
-       log_debug "Error body:"
-       cat "$local_file" 1>&2
-    fi
-    rm -f "$local_file" # Remove potentially incomplete file
-    return 1
-  fi
-  return 0
 }
 http_download_wget() {
   local_file=$1
   source_url=$2
   header=$3
   if [ -z "$header" ]; then
-    wget --quiet --output-document="$local_file" "$source_url"
+    wget -q -O "$local_file" "$source_url"
   else
-    wget --quiet --header="$header" --output-document="$local_file" "$source_url"
+    wget -q --header "$header" -O "$local_file" "$source_url"
   fi
 }
 http_download() {
   log_debug "http_download $2"
   if is_command curl; then
     http_download_curl "$@"
-    return $? # Propagate exit code
+    return
   elif is_command wget; then
     http_download_wget "$@"
-    return $? # Propagate exit code
+    return
   fi
   log_crit "http_download unable to find wget or curl"
   return 1
 }
 http_copy() {
   tmp=$(mktemp)
-  http_download "${tmp}" "$1" "$2" || { rm -f "${tmp}"; return 1; } # Cleanup on failure
+  http_download "${tmp}" "$1" "$2" || return 1
   body=$(cat "$tmp")
   rm -f "${tmp}"
   echo "$body"
@@ -212,42 +169,13 @@ http_copy() {
 github_release() {
   owner_repo=$1
   version=$2
-  # Function to get release tag from GitHub API
-  # Needs implementation using http_copy and JSON parsing (e.g., grep/sed or jq if available)
-  # Handle "latest" tag specifically.
-  log_debug "Fetching release tag for ${owner_repo}, version ${version}"
-  # Simplified: return version for now, assuming tag is passed correctly
-  if [ -z "$version" ] || [ "$version" = "latest" ]; then
-     # Use GitHub API to find the latest release tag
-     api_url="https://api.github.com/repos/${owner_repo}/releases/latest"
-     # Use Authorization header if GITHUB_TOKEN is set
-     auth_header=""
-     if [ -n "$GITHUB_TOKEN" ]; then
-       # Ensure header format is correct
-       auth_header="Authorization: token $GITHUB_TOKEN"
-       log_debug "Using GITHUB_TOKEN for API request"
-     fi
-     # Pass header correctly to http_copy -> http_download
-     json=$(http_copy "$api_url" "$auth_header")
-     if [ -z "$json" ]; then
-        log_err "Failed to fetch latest release info from GitHub API (url: $api_url)"
-        return 1
-     fi
-     # Basic parsing with sed (requires POSIX ERE support)
-     # Handle potential spaces around colon, use [^"]* to match tag name
-     tag=$(echo "$json" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
-     if [ -z "$tag" ]; then
-        log_err "Could not parse tag_name from GitHub API response (url: $api_url)"
-        log_debug "Response body: $json"
-        return 1
-     fi
-     echo "$tag"
-     return 0
-  else
-    # Assume version is a valid tag
-    echo "$version"
-    return 0
-  fi
+  test -z "$version" && version="latest"
+  giturl="https://github.com/${owner_repo}/releases/${version}"
+  json=$(http_copy "$giturl" "Accept:application/json")
+  test -z "$json" && return 1
+  version=$(echo "$json" | tr -s '\n' ' ' | sed 's/.*"tag_name":"//' | sed 's/".*//')
+  test -z "$version" && return 1
+  echo "$version"
 }
 cat /dev/null <<EOF
 ------------------------------------------------------------------------

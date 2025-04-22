@@ -5,7 +5,7 @@ import _ "embed"
 // mainScriptTemplate is the main body of the installer script.
 // It performs runtime detection and resolution.
 //
-//go:embed template.sh
+//go:embed template.tmpl.sh
 var mainScriptTemplate string
 
 // shellFunctions contains the library of POSIX shell functions.

@@ -2,25 +2,19 @@ package shell
 
 import (
 	"bytes"
-
-	// "errors" // Use pkg/errors instead for wrapping
 	"fmt"
-
-	// "runtime" // No longer needed, OS/Arch detection happens in shell
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/haya14busa/goinstaller/pkg/spec"
-	"github.com/pkg/errors" // Use pkg/errors for wrapping
+	"github.com/pkg/errors"
 )
 
 // templateData holds the data passed to the shell script template execution.
 // It only includes static data from the spec.
 type templateData struct {
 	*spec.InstallSpec        // Embed the original spec for access to fields like Name, Repo, Asset, Checksums, etc.
-	BinstallerVersion string // Version of the binstaller tool generating the script
-	SourceInfo        string // Information about the source of the spec (e.g., file path, git commit)
 	ShellFunctions    string // The content of the shell function library
 	HashFunctions     string
 	UntarFunction     string
@@ -43,12 +37,10 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 	// --- Prepare Template Data ---
 	// Only pass static data known at generation time, plus the shell functions
 	data := templateData{
-		InstallSpec:       installSpec,
-		BinstallerVersion: "dev",             // TODO: Get actual version
-		SourceInfo:        "binstaller spec", // TODO: Pass source info down if available from adapter
-		ShellFunctions:    shellFunctions,
-		HashFunctions:     hashFunc,
-		UntarFunction:     untar,
+		InstallSpec:    installSpec,
+		ShellFunctions: shellFunctions,
+		HashFunctions:  hashFunc,
+		UntarFunction:  untar,
 	}
 
 	// --- Prepare Template ---
@@ -83,14 +75,6 @@ func createFuncMap() template.FuncMap {
 		"tolower": strings.ToLower,
 		"toupper": strings.ToUpper,
 		"trim":    strings.TrimSpace,
-		"version": func() string { // Renamed from binstallerVersion for template clarity
-			// TODO: Get binstaller version properly
-			return "dev"
-		},
-		"sourceInfo": func() string {
-			// TODO: How to represent source info in the new model? Maybe pass it down?
-			return "binstaller spec" // Placeholder
-		},
 		"default": func(def, val interface{}) interface{} {
 			sVal := fmt.Sprintf("%v", val)
 			if sVal == "" || sVal == "0" || sVal == "<nil>" || sVal == "false" {

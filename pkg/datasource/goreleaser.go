@@ -8,12 +8,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"text/template" // Added import
+	"text/template"
 
 	"github.com/apex/log"
 	"github.com/goreleaser/goreleaser/v2/pkg/config"
-
-	// "github.com/goreleaser/goreleaser/v2/pkg/defaults" // Removed
 	"github.com/haya14busa/goinstaller/pkg/spec"
 	"github.com/pkg/errors"
 )
@@ -198,10 +196,6 @@ func mapToGoInstallerSpec(project *config.Project, sourceInfo, nameOverride, rep
 	// --- Supported Platforms (from Builds) ---
 	s.SupportedPlatforms = deriveSupportedPlatforms(project.Builds) // Pass the whole slice
 
-	// TODO: Map Aliases based on goreleaser settings? (e.g., archive template analysis) - Complex, requires deeper template parsing.
-	// TODO: Map Variants? GoReleaser doesn't have a direct concept, might need heuristics or manual spec editing.
-	// TODO: Map Attestation? Not directly in goreleaser config.
-
 	log.Infof("initial mapping from goreleaser config complete (source: %s)", sourceInfo)
 	return s, nil
 }
@@ -230,7 +224,6 @@ func formatToExtension(format string) string {
 }
 
 // deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.
-// deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.
 func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept slice
 	platforms := make(map[string]spec.Platform) // Use map to deduplicate
 
@@ -252,15 +245,13 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept
 						platformKey := makePlatformKey(goos, goarch, goarm)
 						if !ignore[platformKey] {
 							// Map arm version to Arch field directly for simplicity now
-							// e.g., linux/arm/6 -> {OS: linux, Arch: arm6}
-							// Variant field remains empty as goreleaser doesn't map directly.
-							platforms[platformKey] = spec.Platform{OS: goos, Arch: goarch + goarm}
+							// e.g., linux/arm/6 -> {OS: linux, Arch: armv6}
+							platforms[platformKey] = spec.Platform{OS: goos, Arch: goarch + "v" + goarm}
 						}
 					}
 				} else {
 					platformKey := makePlatformKey(goos, goarch, "")
 					if !ignore[platformKey] {
-						// TODO: Handle variants? (e.g., amd64p32) - Not directly supported by goreleaser build targets
 						platforms[platformKey] = spec.Platform{OS: goos, Arch: goarch}
 					}
 				}
@@ -283,7 +274,6 @@ func makePlatformKey(goos, goarch, goarm string) string {
 	if goarch == "arm" && goarm != "" {
 		key += goarm // Directly append arm version (e.g., linux/arm6, linux/arm7)
 	}
-	// TODO: Include variant in the key if/when supported
 	return key
 }
 

@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	archRegex = regexp.MustCompile(`eq \.Arch "([^"]+)"\s*-*}\}+\s*([^\s{\-_]+)`)
-	osRegex   = regexp.MustCompile(`eq \.Os "([^"]+)"\s*-*}\}+\s*([^\s{\-_]+)`)
+	archRegex = regexp.MustCompile(`eq \.Arch "([^"]+)"\s*-*}\}+\s*([^\s{\-]+)`)
+	osRegex   = regexp.MustCompile(`eq \.Os "([^"]+)"\s*-*}\}+\s*([^\s{\-]+)`)
 )
 
 // goreleaserAdapter implements the SourceAdapter interface for GoReleaser config files.

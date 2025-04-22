@@ -31,7 +31,7 @@ setup: bin/golangci-lint bin/shellcheck ## Install all the build and lint depend
 .PHONY: setup
 
 install: ## build and install
-	go install $(LDFLAGS) .
+	go install $(LDFLAGS) ./cmd/binst
 
 test: ## Run all the tests
 	go test $(TEST_OPTIONS) -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt $(SOURCE_FILES) -run $(TEST_PATTERN) -timeout=2m
@@ -48,8 +48,8 @@ lint: bin/golangci-lint ## Run all the linters
 ci: build test lint ## travis-ci entrypoint
 	git diff .
 
-build: ## Build a beta version of goinstaller
-	go build $(LDFLAGS)
+build: ## Build a beta version of binstaller
+	go build $(LDFLAGS) ./cmd/binst
 
 .DEFAULT_GOAL := build
 
@@ -57,7 +57,7 @@ build: ## Build a beta version of goinstaller
 
 clean: ## clean up everything
 	go clean ./...
-	rm -f goinstaller
+	rm -f binstaller
 	rm -rf ./bin ./dist ./vendor
 	git gc --aggressive
 

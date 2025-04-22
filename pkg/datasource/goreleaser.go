@@ -137,8 +137,12 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		archive := project.Archives[0] // Focus on the first archive
 
 		// Map default archive format to DefaultExtension
-		s.Asset.DefaultExtension = formatToExtension(archive.Format)
-		log.Debugf("Mapped default archive format '%s' to DefaultExtension '%s'", archive.Format, s.Asset.DefaultExtension)
+		format := archive.Format //nolint:staticcheck
+		if len(archive.Formats) > 0 {
+			format = archive.Formats[0]
+		}
+		s.Asset.DefaultExtension = formatToExtension(format)
+		log.Debugf("Mapped default archive format '%s' to DefaultExtension '%s'", format, s.Asset.DefaultExtension)
 
 		// Asset Template
 		assetTemplate, err := translateTemplate(archive.NameTemplate)
@@ -198,7 +202,7 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		// Asset Rules (Format Overrides)
 		if len(archive.FormatOverrides) > 0 {
 			for _, override := range archive.FormatOverrides {
-				format := override.Format
+				format := override.Format //nolint:staticcheck
 				if len(override.Formats) > 0 {
 					format = override.Formats[0]
 				}

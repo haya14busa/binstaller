@@ -73,8 +73,7 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	// Run the installation script
 	var stderr bytes.Buffer
 	var installStdout bytes.Buffer
-	var installCmd *exec.Cmd
-	installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d")
+	installCmd := exec.Command("sh", installerPath, "-b", binDir, "-d")
 	installCmd.Stderr = &stderr
 	installCmd.Stdout = &installStdout
 	if err := installCmd.Run(); err != nil {

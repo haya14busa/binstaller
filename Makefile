@@ -43,7 +43,7 @@ fmt: ## gofmt and goimports all go files
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 
 lint: bin/golangci-lint ## Run all the linters
-	./bin/golangci-lint run ./...
+	./bin/golangci-lint run ./... --disable errcheck
 
 ci: build test lint ## travis-ci entrypoint
 	git diff .

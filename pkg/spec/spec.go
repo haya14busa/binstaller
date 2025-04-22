@@ -2,16 +2,16 @@ package spec
 
 // InstallSpec defines the v1 configuration schema for binstaller.
 type InstallSpec struct {
-	Schema             string             `yaml:"schema,omitempty"` // Default: "v1"
-	Name               string             `yaml:"name"`             // Binary name
-	Repo               string             `yaml:"repo"`             // GitHub owner/repo (e.g., "owner/repo")
-	SupportedPlatforms []Platform         `yaml:"supported_platforms,omitempty"`
+	Schema             string             `yaml:"schema,omitempty"`          // Default: "v1"
+	Name               string             `yaml:"name"`                      // Binary name
+	Repo               string             `yaml:"repo"`                      // GitHub owner/repo (e.g., "owner/repo")
 	DefaultVersion     string             `yaml:"default_version,omitempty"` // Default: "latest"
 	Variant            *VariantConfig     `yaml:"variant,omitempty"`
 	Asset              AssetConfig        `yaml:"asset"`
 	Checksums          *ChecksumConfig    `yaml:"checksums,omitempty"`
 	Attestation        *AttestationConfig `yaml:"attestation,omitempty"`
 	Unpack             *UnpackConfig      `yaml:"unpack,omitempty"`
+	SupportedPlatforms []Platform         `yaml:"supported_platforms,omitempty"`
 }
 
 // Platform defines a supported OS/Arch/Variant combination.
@@ -132,15 +132,5 @@ func (s *InstallSpec) SetDefaults() {
 			require := false
 			s.Attestation.Require = &require
 		}
-	}
-	if s.Unpack != nil {
-		if s.Unpack.StripComponents == nil {
-			strip := 0
-			s.Unpack.StripComponents = &strip
-		}
-	} else {
-		// Ensure unpack is not nil if defaults are applied
-		strip := 0
-		s.Unpack = &UnpackConfig{StripComponents: &strip}
 	}
 }

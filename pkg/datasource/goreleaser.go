@@ -2,10 +2,13 @@ package datasource
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -13,6 +16,11 @@ import (
 	"github.com/goreleaser/goreleaser/v2/pkg/config"
 	"github.com/haya14busa/goinstaller/pkg/spec"
 	"github.com/pkg/errors"
+)
+
+var (
+	archRegex = regexp.MustCompile(`eq \.Arch "([^"]+)"\s*-*}\}+\s*([^\s{\-_]+)`)
+	osRegex   = regexp.MustCompile(`eq \.Os "([^"]+)"\s*-*}\}+\s*([^\s{\-_]+)`)
 )
 
 // goreleaserAdapter implements the SourceAdapter interface for GoReleaser config files.
@@ -108,7 +116,11 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 	}
 
 	// --- Checksums ---
-	if project.Checksum.NameTemplate != "" {
+	if !project.Checksum.Disable {
+		if project.Checksum.NameTemplate == "" {
+			// default: https://goreleaser.com/customization/checksum/
+			project.Checksum.NameTemplate = "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+		}
 		checksumTemplate, err := translateTemplate(project.Checksum.NameTemplate)
 		if err != nil {
 			log.WithError(err).Warnf("Failed to translate checksum template, using raw: %s", project.Checksum.NameTemplate)
@@ -159,9 +171,32 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 			}
 		}
 
+		s.Asset.Rules = make([]spec.AssetRule, 0)
+
+		// Asset Rules (Arch)
+		for _, m := range archRegex.FindAllStringSubmatch(archive.NameTemplate, -1) {
+			if len(m) == 3 && m[1] != "" && m[2] != "" {
+				log.Debugf("Inferred Arch name alias (%s -> %s) from template: %s", m[1], m[2], archive.NameTemplate)
+				s.Asset.Rules = append(s.Asset.Rules, spec.AssetRule{
+					When: spec.PlatformCondition{Arch: m[1]},
+					Arch: m[2],
+				})
+			}
+		}
+
+		// Asset Rules (OS)
+		for _, m := range osRegex.FindAllStringSubmatch(archive.NameTemplate, -1) {
+			if len(m) == 3 && m[1] != "" && m[2] != "" {
+				log.Debugf("Inferred OS name alias (%s -> %s) from template: %s", m[1], m[2], archive.NameTemplate)
+				s.Asset.Rules = append(s.Asset.Rules, spec.AssetRule{
+					When: spec.PlatformCondition{OS: m[1]},
+					OS:   m[2],
+				})
+			}
+		}
+
 		// Asset Rules (Format Overrides)
 		if len(archive.FormatOverrides) > 0 {
-			s.Asset.Rules = make([]spec.AssetRule, 0, len(archive.FormatOverrides))
 			for _, override := range archive.FormatOverrides {
 				format := override.Format
 				if len(override.Formats) > 0 {
@@ -186,12 +221,7 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		if archive.WrapInDirectory == "true" {
 			strip := 1
 			s.Unpack = &spec.UnpackConfig{StripComponents: &strip}
-		} else {
-			// Check if goreleaser has its own strip_components field (it doesn't seem to)
-			strip := 0 // Default to 0 if not wrapped
-			s.Unpack = &spec.UnpackConfig{StripComponents: &strip}
 		}
-
 	} else {
 		log.Warnf("no archives found in goreleaser config, asset information may be incomplete")
 		s.Asset.Template = "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}" // A basic default
@@ -228,7 +258,7 @@ func formatToExtension(format string) string {
 }
 
 // deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.
-func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept slice
+func deriveSupportedPlatforms(builds []config.Build) []spec.Platform {
 	platforms := make(map[string]spec.Platform) // Use map to deduplicate
 
 	// Collect all ignore rules from all builds into a single map
@@ -268,7 +298,13 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform { // Accept
 	for _, p := range platforms {
 		result = append(result, p)
 	}
-	// TODO: Sort the result for deterministic output?
+	slices.SortStableFunc(result, func(i, j spec.Platform) int {
+		return cmp.Or(
+			cmp.Compare(i.OS, j.OS),
+			cmp.Compare(i.Arch, j.Arch),
+			cmp.Compare(i.Variant, j.Variant),
+		)
+	})
 	return result
 }
 

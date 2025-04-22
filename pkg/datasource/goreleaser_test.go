@@ -23,7 +23,7 @@ func setupGoReleaserTest(t *testing.T, goreleaserConfigContent string) (*spec.In
 	}
 	defer cleanupTempFile(tmpFile)
 
-	adapter := datasource.NewGoReleaserAdapter()
+	adapter := datasource.NewGoReleaserAdapter("", tmpFile.Name())
 	input := datasource.DetectInput{
 		FilePath: tmpFile.Name(),
 	}
@@ -78,9 +78,7 @@ checksum:
 			Template:  "checksums.txt",
 			Algorithm: "sha256",
 		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(0),
-		},
+		Unpack: nil,
 	}
 
 	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
@@ -137,9 +135,7 @@ checksum:
 			Template:  "checksums.txt",
 			Algorithm: "sha256",
 		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(0),
-		},
+		Unpack: nil,
 	}
 
 	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
@@ -177,7 +173,7 @@ checksum:
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
-			Rules:            nil,
+			Rules:            []spec.AssetRule{},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "titlecase",
 				Arch: "lowercase",
@@ -186,9 +182,6 @@ checksum:
 		Checksums: &spec.ChecksumConfig{
 			Template:  "checksums.txt",
 			Algorithm: "sha256",
-		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(0),
 		},
 	}
 
@@ -228,7 +221,7 @@ checksum:
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
-			Rules:            nil,
+			Rules:            []spec.AssetRule{},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "lowercase",
 				Arch: "lowercase",
@@ -312,9 +305,7 @@ checksum:
 			Template:  "checksums.txt",
 			Algorithm: "sha256",
 		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(0),
-		},
+		Unpack: nil,
 	}
 
 	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
@@ -358,7 +349,7 @@ checksum:
 	}
 
 	expectedPlatforms := []spec.Platform{
-		{OS: "linux", Arch: "arm7"},
+		{OS: "linux", Arch: "armv7"},
 		{OS: "darwin", Arch: "arm64"},
 		// linux/arm/6 is ignored
 	}
@@ -386,9 +377,7 @@ checksum:
 			Template:  "checksums.txt",
 			Algorithm: "sha256",
 		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(0),
-		},
+		Unpack: nil,
 	}
 
 	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
@@ -445,7 +434,10 @@ checksum:
 		Asset: spec.AssetConfig{
 			Template:         expectedTemplate + "${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
-			Rules:            nil,       // No format overrides in this config
+			Rules: []spec.AssetRule{
+				{When: spec.PlatformCondition{Arch: "amd64"}, Arch: "x86"},
+				{When: spec.PlatformCondition{Arch: "386"}, Arch: "i386"},
+			},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "titlecase", // Corrected expected value
 				Arch: "lowercase", // Default
@@ -455,9 +447,7 @@ checksum:
 			Template:  "checksums.txt",
 			Algorithm: "sha256",
 		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(0), // Default
-		},
+		Unpack: nil,
 	}
 
 	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
@@ -503,13 +493,3 @@ func sortPlatforms(platforms []spec.Platform) {
 		}
 	}
 }
-
-// TODO: Add more test cases:
-// - Test with missing release.github (should infer from git remote) - Not implementing for now
-// - Test with different template formats and conditionals - Complex, deferring
-// - Test with multiple archives (should only use the first for now) - Current behavior, test not strictly needed
-// - Test with different checksum algorithms - Checksum algorithm mapping is already present
-// - Test with overrides (--name, --repo) - Overrides are handled before mapping, test in cmd package
-// - Test loading from GitHub (requires mocking HTTP client or using a real test repo) - Deferring
-// - Test with GoReleaser builds including Goarm - Done
-// - Test with complex name_template including conditionals and functions - Done

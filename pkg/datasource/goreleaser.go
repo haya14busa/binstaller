@@ -292,7 +292,8 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform {
 				if goarch == "arm" {
 					for _, goarm := range build.Goarm {
 						platformKey := makePlatformKey(goos, goarch, goarm)
-						if !ignore[platformKey] && isValidTarget(goos, goarch) {
+						platformKeyWithoutArm := makePlatformKey(goos, goarch, "")
+						if !ignore[platformKey] && !ignore[platformKeyWithoutArm] && isValidTarget(goos, goarch) {
 							// Map arm version to Arch field directly for simplicity now
 							// e.g., linux/arm/6 -> {OS: linux, Arch: armv6}
 							platforms[platformKey] = spec.Platform{OS: goos, Arch: goarch + "v" + goarm}

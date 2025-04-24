@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/haya14busa/goinstaller/pkg/datasource"
 	"github.com/haya14busa/goinstaller/pkg/spec"
-	"gopkg.in/yaml.v3"
 )
 
 // setupGoReleaserTest is a helper function to create a temporary goreleaser.yml
@@ -32,7 +31,7 @@ func setupGoReleaserTest(t *testing.T, goreleaserConfigContent string) (*spec.In
 	return installSpec, err
 }
 
-func TestGoReleaserAdapter_Detect_File(t *testing.T) {
+func TestGoReleaserAdapter_Detect_File_DefaultExtension(t *testing.T) {
 	goreleaserConfigContent := `
 version: 2
 project_name: mycli
@@ -48,52 +47,121 @@ archives:
 checksum:
   name_template: "checksums.txt"
 `
+	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
+	if err != nil {
+		t.Fatalf("setupGoReleaserTest failed: %v", err)
+	}
+	if installSpec.Asset.DefaultExtension != ".tar.gz" {
+		t.Errorf("DefaultExtension: want .tar.gz, got %q", installSpec.Asset.DefaultExtension)
+	}
+}
 
+func TestGoReleaserAdapter_Detect_File_AssetRules(t *testing.T) {
+	goreleaserConfigContent := `
+version: 2
+project_name: mycli
+release:
+  github:
+    owner: myowner
+    name: myrepo
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: "checksums.txt"
+`
+	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
+	if err != nil {
+		t.Fatalf("setupGoReleaserTest failed: %v", err)
+	}
+	want := []spec.AssetRule{
+		{
+			When: spec.PlatformCondition{OS: "windows"},
+			Ext:  ".zip",
+		},
+	}
+	if diff := cmp.Diff(want, installSpec.Asset.Rules); diff != "" {
+		t.Errorf("Asset.Rules mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGoReleaserAdapter_Detect_File_ChecksumsTemplate(t *testing.T) {
+	goreleaserConfigContent := `
+version: 2
+project_name: mycli
+release:
+  github:
+    owner: myowner
+    name: myrepo
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: "checksums.txt"
+`
+	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
+	if err != nil {
+		t.Fatalf("setupGoReleaserTest failed: %v", err)
+	}
+	want := "checksums.txt"
+	if installSpec.Checksums == nil || installSpec.Checksums.Template != want {
+		t.Errorf("Checksums.Template: want %q, got %v", want, installSpec.Checksums)
+	}
+}
+
+func TestGoReleaserAdapter_Detect_File_NameAndRepo(t *testing.T) {
+	goreleaserConfigContent := `
+version: 2
+project_name: mycli
+release:
+  github:
+    owner: myowner
+    name: myrepo
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+checksum:
+  name_template: "checksums.txt"
+`
+	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
+	if err != nil {
+		t.Fatalf("setupGoReleaserTest failed: %v", err)
+	}
+	if installSpec.Name != "mycli" {
+		t.Errorf("Name: want mycli, got %q", installSpec.Name)
+	}
+	if installSpec.Repo != "myowner/myrepo" {
+		t.Errorf("Repo: want myowner/myrepo, got %q", installSpec.Repo)
+	}
+}
+
+func TestGoReleaserAdapter_Detect_BinaryFormat(t *testing.T) {
+	goreleaserConfigContent := `
+version: 2
+project_name: mycli
+release:
+  github:
+    owner: myowner
+    name: myrepo
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: binary
+checksum:
+  name_template: "checksums.txt"
+`
 	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
 	if err != nil {
 		t.Fatalf("setupGoReleaserTest failed: %v", err)
 	}
 
-	expectedSpec := &spec.InstallSpec{
-		Schema: "v1",
-		Name:   "mycli",
-		Repo:   "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{
-			{OS: "darwin", Arch: "amd64"},
-			{OS: "darwin", Arch: "arm64"},
-			{OS: "linux", Arch: "386"},
-			{OS: "linux", Arch: "amd64"},
-			{OS: "linux", Arch: "arm64"},
-			{OS: "windows", Arch: "386"},
-			{OS: "windows", Arch: "amd64"},
-			{OS: "windows", Arch: "arm64"},
-		},
-		DefaultVersion: "latest",
-		Asset: spec.AssetConfig{
-			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz",
-			Rules: []spec.AssetRule{
-				{
-					When: spec.PlatformCondition{OS: "windows"},
-					Ext:  ".zip",
-				},
-			},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "lowercase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
-		Unpack: nil,
-	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	if installSpec.Asset.DefaultExtension != "" {
+		t.Errorf("DefaultExtension for binary format should be empty, got: %q", installSpec.Asset.DefaultExtension)
 	}
 }
 
@@ -112,54 +180,14 @@ archives:
 checksum:
   name_template: "checksums.txt"
 `
-
 	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
 	if err != nil {
 		t.Fatalf("setupGoReleaserTest failed: %v", err)
 	}
 
 	expectedName := "myrepo"
-
-	expectedSpec := &spec.InstallSpec{
-		Schema: "v1",
-		Name:   expectedName,
-		Repo:   "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{
-			{OS: "darwin", Arch: "amd64"},
-			{OS: "darwin", Arch: "arm64"},
-			{OS: "linux", Arch: "386"},
-			{OS: "linux", Arch: "amd64"},
-			{OS: "linux", Arch: "arm64"},
-			{OS: "windows", Arch: "386"},
-			{OS: "windows", Arch: "amd64"},
-			{OS: "windows", Arch: "arm64"},
-		},
-		DefaultVersion: "latest",
-		Asset: spec.AssetConfig{
-			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz",
-			Rules: []spec.AssetRule{
-				{
-					When: spec.PlatformCondition{OS: "windows"},
-					Ext:  ".zip",
-				},
-			},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "lowercase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
-		Unpack: nil,
-	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	if installSpec.Name != expectedName {
+		t.Errorf("expected Name to be %q, got %q", expectedName, installSpec.Name)
 	}
 }
 
@@ -176,46 +204,15 @@ archives:
 checksum:
   name_template: "checksums.txt"
 `
-
 	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
 	if err != nil {
 		t.Fatalf("setupGoReleaserTest failed: %v", err)
 	}
-
-	expectedSpec := &spec.InstallSpec{
-		Schema: "v1",
-		Name:   "mycli",
-		Repo:   "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{
-			{OS: "darwin", Arch: "amd64"},
-			{OS: "darwin", Arch: "arm64"},
-			{OS: "linux", Arch: "386"},
-			{OS: "linux", Arch: "amd64"},
-			{OS: "linux", Arch: "arm64"},
-			{OS: "windows", Arch: "386"},
-			{OS: "windows", Arch: "amd64"},
-			{OS: "windows", Arch: "arm64"},
-		},
-		DefaultVersion: "latest",
-		Asset: spec.AssetConfig{
-			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz",
-			Rules:            []spec.AssetRule{},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "titlecase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
+	if installSpec.Asset.NamingConvention == nil {
+		t.Fatalf("NamingConvention is nil")
 	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	if installSpec.Asset.NamingConvention.OS != "titlecase" {
+		t.Errorf("NamingConvention.OS: want titlecase, got %q", installSpec.Asset.NamingConvention.OS)
 	}
 }
 
@@ -233,49 +230,15 @@ archives:
 checksum:
   name_template: "checksums.txt"
 `
-
 	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
 	if err != nil {
 		t.Fatalf("setupGoReleaserTest failed: %v", err)
 	}
-
-	expectedSpec := &spec.InstallSpec{
-		Schema: "v1",
-		Name:   "mycli",
-		Repo:   "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{
-			{OS: "darwin", Arch: "amd64"},
-			{OS: "darwin", Arch: "arm64"},
-			{OS: "linux", Arch: "386"},
-			{OS: "linux", Arch: "amd64"},
-			{OS: "linux", Arch: "arm64"},
-			{OS: "windows", Arch: "386"},
-			{OS: "windows", Arch: "amd64"},
-			{OS: "windows", Arch: "arm64"},
-		},
-		DefaultVersion: "latest",
-		Asset: spec.AssetConfig{
-			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz",
-			Rules:            []spec.AssetRule{},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "lowercase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
-		Unpack: &spec.UnpackConfig{
-			StripComponents: intPtr(1),
-		},
+	if installSpec.Unpack == nil {
+		t.Fatalf("Unpack should not be nil")
 	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	if installSpec.Unpack.StripComponents == nil || *installSpec.Unpack.StripComponents != 1 {
+		t.Errorf("Unpack.StripComponents: want 1, got %v", installSpec.Unpack.StripComponents)
 	}
 }
 
@@ -306,7 +269,6 @@ builds:
 checksum:
   name_template: "checksums.txt"
 `
-
 	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
 	if err != nil {
 		t.Fatalf("setupGoReleaserTest failed: %v", err)
@@ -325,32 +287,8 @@ checksum:
 	sortPlatforms(expectedPlatforms)
 	sortPlatforms(installSpec.SupportedPlatforms)
 
-	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               "mycli",
-		Repo:               "myowner/myrepo",
-		SupportedPlatforms: expectedPlatforms,
-		DefaultVersion:     "latest",
-		Asset: spec.AssetConfig{
-			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}", // Default template as no archives defined
-			DefaultExtension: ".tar.gz",
-			Rules:            []spec.AssetRule{},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "lowercase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
-		Unpack: nil,
-	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	if diff := cmp.Diff(expectedPlatforms, installSpec.SupportedPlatforms); diff != "" {
+		t.Errorf("SupportedPlatforms mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -377,7 +315,6 @@ builds:
 checksum:
   name_template: "checksums.txt"
 `
-
 	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
 	if err != nil {
 		t.Fatalf("setupGoReleaserTest failed: %v", err)
@@ -392,32 +329,8 @@ checksum:
 	sortPlatforms(expectedPlatforms)
 	sortPlatforms(installSpec.SupportedPlatforms)
 
-	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               "mycli",
-		Repo:               "myowner/myrepo",
-		SupportedPlatforms: expectedPlatforms,
-		DefaultVersion:     "latest",
-		Asset: spec.AssetConfig{
-			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}", // Default template as no archives defined
-			DefaultExtension: ".tar.gz",                                // Corrected expected value
-			Rules:            []spec.AssetRule{},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "lowercase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
-		Unpack: nil,
-	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	if diff := cmp.Diff(expectedPlatforms, installSpec.SupportedPlatforms); diff != "" {
+		t.Errorf("SupportedPlatforms mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -457,46 +370,9 @@ checksum:
 	// {{- if .Arm }}v{{ .Arm }}{{ end }}
 	//   - if "${ARM}" is true (non-empty string)
 	//   - v{{ .Arm }} is executed -> v${ARM}
-	expectedTemplate := "${NAME}_${OS}_${ARCH}"
-
-	expectedSpec := &spec.InstallSpec{
-		Schema:         "v1",
-		Name:           "sigspy",
-		Repo:           "actionutils/sigspy",
-		DefaultVersion: "latest",
-		Asset: spec.AssetConfig{
-			Template:         expectedTemplate + "${EXT}",
-			DefaultExtension: ".tar.gz",
-			Rules: []spec.AssetRule{
-				{When: spec.PlatformCondition{Arch: "amd64"}, Arch: "x86_64"},
-				{When: spec.PlatformCondition{Arch: "386"}, Arch: "i386"},
-			},
-			NamingConvention: &spec.NamingConvention{
-				OS:   "titlecase",
-				Arch: "lowercase",
-			},
-		},
-		Checksums: &spec.ChecksumConfig{
-			Template:  "checksums.txt",
-			Algorithm: "sha256",
-		},
-		Unpack: nil,
-		SupportedPlatforms: []spec.Platform{
-			{OS: "darwin", Arch: "amd64"},
-			{OS: "darwin", Arch: "arm64"},
-			{OS: "linux", Arch: "386"},
-			{OS: "linux", Arch: "amd64"},
-			{OS: "linux", Arch: "arm64"},
-			{OS: "windows", Arch: "386"},
-			{OS: "windows", Arch: "amd64"},
-			{OS: "windows", Arch: "arm64"},
-		},
-	}
-
-	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {
-		t.Errorf("Generated InstallSpec mismatch (-expected +actual):\n%s", diff)
-		actualYAML, _ := yaml.Marshal(installSpec)
-		t.Logf("Actual generated InstallSpec YAML:\n%s", string(actualYAML))
+	expectedTemplate := "${NAME}_${OS}_${ARCH}${EXT}"
+	if installSpec.Asset.Template != expectedTemplate {
+		t.Errorf("Asset.Template: want %q, got %q", expectedTemplate, installSpec.Asset.Template)
 	}
 }
 

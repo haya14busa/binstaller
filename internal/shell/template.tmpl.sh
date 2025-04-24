@@ -28,7 +28,7 @@ EOF
 
 parse_args() {
   BINDIR="./bin"
-  while getopts "b:dt:h?x" arg; do
+  while getopts "b:d:h?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;
     d) log_set_priority 10 ;;
@@ -65,13 +65,13 @@ capitalize() {
   input="$1"
   first_char=$(printf "%s" "$input" | cut -c1)
   first_upper=$(printf "%s" "$first_char" | tr '[:lower:]' '[:upper:]')
-  printf "%s%s\n" "$first_upper" $(printf "%s" "$input" | cut -c2-)
+  printf "%s%s\n" "$first_upper" "$(printf "%s" "$input" | cut -c2-)"
 }
 {{- end }}
 
 resolve_asset_filename() {
   {{ if eq .Asset.NamingConvention.OS "titlecase" -}}
-  OS=$(capitalize $OS)
+  OS="$(capitalize "${OS}")"
   {{- end }}
   # --- Apply Rules ---
   ASSET_FILENAME=""

@@ -12,9 +12,6 @@ is_command() {
 echoerr() {
   echo "$@" 1>&2
 }
-log_prefix() {
-  echo "$0"
-}
 _logp=6
 log_set_priority() {
   _logp="$1"
@@ -63,7 +60,7 @@ uname_os() {
     cygwin*) os="windows" ;;
   esac
   if [ "$os" = "sunos" ]; then
-    if [ $(uname -o) == "illumos" ]; then
+    if [ "$(uname -o)" = "illumos" ]; then
       os="illumos"
     else
       os="solaris"
@@ -84,7 +81,7 @@ uname_arch() {
     armv6*) arch="armv6" ;;
     armv7*) arch="armv7" ;;
   esac
-  echo ${arch}
+  echo "${arch}"
 }
 uname_os_check() {
   os=$(uname_os)

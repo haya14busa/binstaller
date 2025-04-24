@@ -323,15 +323,9 @@ tag_to_version() {
   log_info "Resolved version: ${VERSION} (tag: ${TAG})"
 }
 
-capitalize() {
-  input="$1"
-  first_char=$(printf "%s" "$input" | cut -c1)
-  first_upper=$(printf "%s" "$first_char" | tr '[:lower:]' '[:upper:]')
-  printf "%s%s\n" "$first_upper" "$(printf "%s" "$input" | cut -c2-)"
-}
 
 resolve_asset_filename() {
-  OS="$(capitalize "${OS}")"
+  
   # --- Apply Rules ---
   ASSET_FILENAME=""
   if [ "${UNAME_OS}" = 'darwin' ] && true

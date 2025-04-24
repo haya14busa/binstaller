@@ -16,9 +16,6 @@ asset:
         - when:
             os: windows
           ext: .zip
-    naming_convention:
-        os: titlecase
-        arch: lowercase
 checksums:
     template: ${NAME}_${VERSION}_checksums.txt
     algorithm: sha256

@@ -9,12 +9,12 @@ import (
 	"testing"
 )
 
-var goinstallerPath string
+var binstallerPath string
 
-// TestMain builds the goinstaller binary once before running all tests
+// TestMain builds the binstaller binary once before running all tests
 func TestMain(m *testing.M) {
-	// Create a temporary directory for the goinstaller binary
-	tempDir, err := os.MkdirTemp("", "goinstaller-test")
+	// Create a temporary directory for the binstaller binary
+	tempDir, err := os.MkdirTemp("", "binstaller-test")
 	if err != nil {
 		panic("Failed to create temp directory: " + err.Error())
 	}
@@ -24,41 +24,52 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	// Build the goinstaller tool to a temporary location
-	execName := "goinstaller"
+	// Build the binstaller tool to a temporary location
+	execName := "binst"
 	if runtime.GOOS == "windows" {
 		execName += ".exe"
 	}
-	goinstallerPath = filepath.Join(tempDir, execName)
-	cmd := exec.Command("go", "build", "-o", goinstallerPath)
+	binstallerPath = filepath.Join(tempDir, execName)
+	cmd := exec.Command("go", "build", "-o", binstallerPath, "./cmd/binst")
 	cmd.Dir = ".." // Go up one level to reach the root directory
+	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		panic("Failed to build goinstaller: " + err.Error())
+		panic("Failed to build binstaller: " + err.Error())
 	}
 
 	// Run the tests
 	os.Exit(m.Run())
 }
 
-// testInstallScript tests that the goinstaller tool can generate a working
+// testInstallScript tests that the binstaller tool can generate a working
 // installation script for the specified repository and that the script
 // can successfully install the binary.
-func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
+func testInstallScript(t *testing.T, repo, binaryName, versionFlag, sha string) {
 	// Create a temporary directory for all test artifacts
 	tempDir := t.TempDir()
 
-	// Generate the installation script for the repository
-	installerPath := filepath.Join(tempDir, binaryName+"-install.sh")
-	var stdout bytes.Buffer
-	generateCmd := exec.Command(goinstallerPath, "--repo="+repo, "--enable-gh-attestation")
-	generateCmd.Stdout = &stdout
-	if err := generateCmd.Run(); err != nil {
-		t.Fatalf("Failed to generate installation script: %v", err)
+	// Init binstaller config
+	configPath := filepath.Join(tempDir, binaryName+".binstaller.yml")
+	initCmd := exec.Command(binstallerPath, "init", "--verbose", "--source=goreleaser", "--repo", repo, "-o", configPath, "--sha", sha)
+	initCmd.Stderr = os.Stderr
+	if err := initCmd.Run(); err != nil {
+		t.Fatalf("Failed to init binstaller config: %v", err)
 	}
 
-	// Write the installation script to a file
-	if err := os.WriteFile(installerPath, stdout.Bytes(), 0755); err != nil {
-		t.Fatalf("Failed to write installation script: %v", err)
+	// Check that the config file content
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Failed to read config file: %v", err)
+	}
+	// Log the config file content
+	t.Logf("Config file content:\n%s", configContent)
+
+	// Generate installer script
+	installerPath := filepath.Join(tempDir, binaryName+".binstaller.sh")
+	genCmd := exec.Command(binstallerPath, "gen", "--config", configPath, "-o", installerPath)
+	genCmd.Stderr = os.Stderr
+	if err := genCmd.Run(); err != nil {
+		t.Fatalf("Failed to generate installation script: %v", err)
 	}
 
 	// Create a temporary bin directory
@@ -70,15 +81,7 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	// Run the installation script
 	var stderr bytes.Buffer
 	var installStdout bytes.Buffer
-	var installCmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		// FIXME: Windows support is still a work in progress
-		// On Windows, we need to use the & operator to execute the script
-		installCmd = exec.Command("powershell", "-Command", "& '"+installerPath+"' -b '"+binDir+"' -d")
-	} else {
-		// Skip attestation verification to avoid failures for repositories without attestations
-		installCmd = exec.Command("sh", installerPath, "-b", binDir, "-d", "-s")
-	}
+	installCmd := exec.Command("sh", installerPath, "-b", binDir, "-d")
 	installCmd.Stderr = &stderr
 	installCmd.Stdout = &installStdout
 	if err := installCmd.Run(); err != nil {
@@ -96,7 +99,7 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	}
 
 	// Check that the binary works
-	stdout.Reset()
+	var stdout bytes.Buffer
 	stderr.Reset()
 	versionCmd := exec.Command(binaryPath, versionFlag)
 	versionCmd.Stdout = &stdout
@@ -114,38 +117,22 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag string) {
 	t.Logf("Successfully installed and ran %s with %s flag", binaryName, versionFlag)
 }
 
-// TestReviewdogE2E tests that the goinstaller tool can generate a working
-// installation script for the reviewdog repository and that the script
-// can successfully install the reviewdog binary.
 func TestReviewdogE2E(t *testing.T) {
-	testInstallScript(t, "reviewdog/reviewdog", "reviewdog", "-version")
+	testInstallScript(t, "reviewdog/reviewdog", "reviewdog", "-version", "7e05fa3e78ba7f2be4999ca2d35b00a3fd92a783")
 }
 
-// TestGoreleaserE2E tests that the goinstaller tool can generate a working
-// installation script for the goreleaser repository, which uses "main"
-// as its default branch, and that the script can successfully install
-// the goreleaser binary.
 func TestGoreleaserE2E(t *testing.T) {
-	testInstallScript(t, "goreleaser/goreleaser", "goreleaser", "--version")
+	testInstallScript(t, "goreleaser/goreleaser", "goreleaser", "--version", "79c76c229d50ca45ef77afa1745df0a0e438d237")
 }
 
-// TestGhSetupE2E tests that the goinstaller tool can generate a working
-// installation script for the k1LoW/gh-setup repository and that the script
-// can successfully install the gh-setup binary.
 func TestGhSetupE2E(t *testing.T) {
-	testInstallScript(t, "k1LoW/gh-setup", "gh-setup", "--help")
+	testInstallScript(t, "k1LoW/gh-setup", "gh-setup", "--help", "a2359e4bcda8af5d7e16e1b3fb0eeec1be267e63")
 }
 
-// TestSigspyE2E tests that the goinstaller tool can generate a working
-// installation script for the actionutils/sigspy repository and that the script
-// can successfully install the sigspy binary.
 func TestSigspyE2E(t *testing.T) {
-	testInstallScript(t, "actionutils/sigspy", "sigspy", "--help")
+	testInstallScript(t, "actionutils/sigspy", "sigspy", "--help", "3e1c6f32072cd4b8309d00bd31f498903f71c422")
 }
 
-// TestGolangciLintE2E tests that the goinstaller tool can generate a working
-// installation script for the golangci/golangci-lint repository and that the script
-// can successfully install the golangci-lint binary.
 func TestGolangciLintE2E(t *testing.T) {
-	testInstallScript(t, "golangci/golangci-lint", "golangci-lint", "--version")
+	testInstallScript(t, "golangci/golangci-lint", "golangci-lint", "--version", "6d2a94be6b20f1c06e95d79479c6fdc34a69c45f")
 }

@@ -1,0 +1,85 @@
+package shell
+
+import (
+	"bytes"
+	"fmt"
+	"strings"
+	"text/template"
+	"time"
+
+	"github.com/haya14busa/goinstaller/pkg/spec"
+	"github.com/pkg/errors"
+)
+
+// templateData holds the data passed to the shell script template execution.
+// It only includes static data from the spec.
+type templateData struct {
+	*spec.InstallSpec        // Embed the original spec for access to fields like Name, Repo, Asset, Checksums, etc.
+	Shlib             string // The content of the shell function library
+	HashFunctions     string
+	ShellFunctions    string
+}
+
+// Generate creates the installer shell script content based on the InstallSpec.
+// The generated script will dynamically determine OS, Arch, and Version at runtime.
+func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
+	if installSpec == nil {
+		return nil, errors.New("install spec cannot be nil")
+	}
+	// Apply spec defaults first - this is still useful for the spec structure itself
+	installSpec.SetDefaults()
+
+	hashFunc := hashSHA256
+	if installSpec.Checksums != nil && installSpec.Checksums.Algorithm == "sha1" {
+		hashFunc = hashSHA1
+	}
+
+	// --- Prepare Template Data ---
+	// Only pass static data known at generation time, plus the shell functions
+	data := templateData{
+		InstallSpec:    installSpec,
+		Shlib:          shlib,
+		HashFunctions:  hashFunc,
+		ShellFunctions: shellFunctions,
+	}
+
+	// --- Prepare Template ---
+	// The template now needs to contain the logic for runtime detection and asset resolution
+	funcMap := createFuncMap() // Keep helper funcs like default, tolower etc.
+
+	tmpl, err := template.New("installer").Funcs(funcMap).Parse(mainScriptTemplate) // Parse only the main template
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse installer template")
+	}
+
+	// --- Execute Template ---
+	var buf bytes.Buffer
+	// Execute the template with the data struct.
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute installer template")
+	}
+
+	return buf.Bytes(), nil
+}
+
+// createFuncMap defines the functions available to the Go template.
+func createFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"join":    strings.Join,
+		"replace": strings.ReplaceAll,
+		"time": func(s string) string {
+			return time.Now().UTC().Format(s)
+		},
+		"tolower": strings.ToLower,
+		"toupper": strings.ToUpper,
+		"trim":    strings.TrimSpace,
+		"default": func(def, val interface{}) interface{} {
+			sVal := fmt.Sprintf("%v", val)
+			if sVal == "" || sVal == "0" || sVal == "<nil>" || sVal == "false" {
+				return def
+			}
+			return val
+		},
+	}
+}

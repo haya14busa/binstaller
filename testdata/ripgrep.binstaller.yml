@@ -8,7 +8,8 @@ asset:
     rules:
         - { when: { os: windows }, os: pc-windows-msvc }
         - { when: { os: darwin },  os: apple-darwin }
-        - { when: { os: linux }, os: unknown-linux-gnu }
+        - { when: { os: linux, arch: arm64 }, os: unknown-linux-gnu }
+        - { when: { os: linux, arch: amd64 }, os: unknown-linux-musl }
         - { when: { arch: arm64 }, arch: aarch64 }
         - { when: { arch: amd64 }, arch: x86_64 }
         - { when: { arch: 386 }, arch: i686 }

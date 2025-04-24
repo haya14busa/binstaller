@@ -151,7 +151,8 @@ release:
     name: myrepo
 archives:
   - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format: binary
+    formats:
+      - binary
 checksum:
   name_template: "checksums.txt"
 `
@@ -162,6 +163,30 @@ checksum:
 
 	if installSpec.Asset.DefaultExtension != "" {
 		t.Errorf("DefaultExtension for binary format should be empty, got: %q", installSpec.Asset.DefaultExtension)
+	}
+}
+
+func TestGoReleaserAdapter_Detect_DeprecatedFormat(t *testing.T) {
+	goreleaserConfigContent := `
+version: 2
+project_name: mycli
+release:
+  github:
+    owner: myowner
+    name: myrepo
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: zip # format is Depreated
+checksum:
+  name_template: "checksums.txt"
+`
+	installSpec, err := setupGoReleaserTest(t, goreleaserConfigContent)
+	if err != nil {
+		t.Fatalf("setupGoReleaserTest failed: %v", err)
+	}
+
+	if installSpec.Asset.DefaultExtension != ".zip" {
+		t.Errorf("DefaultExtension for binary format should be .zip, got: %q", installSpec.Asset.DefaultExtension)
 	}
 }
 

@@ -1,15 +1,10 @@
 untar() {
   tarball=$1
-  strip_components=${2:-0} # Second argument is strip_components, default 0
-  strip_components_flag=""
-  if [ "$strip_components" -gt 0 ]; then
-   strip_components_flag="--strip-components=${strip_components}"
-  fi
-
+  strip_components=${2:-0} # default 0
   case "${tarball}" in
-    *.tar.gz | *.tgz) tar --no-same-owner -xzf "${tarball}" ${strip_components_flag} ;;
-    *.tar.xz) tar --no-same-owner -xJf "${tarball}" ${strip_components_flag} ;;
-    *.tar) tar --no-same-owner -xf "${tarball}" ${strip_components_flag} ;;
+    *.tar.gz | *.tgz) tar --no-same-owner -xzf "${tarball}" --strip-components "${strip_components}" ;;
+    *.tar.xz) tar --no-same-owner -xJf "${tarball}" --strip-components "${strip_components}" ;;
+    *.tar) tar --no-same-owner -xf "${tarball}" --strip-components "${strip_components}" ;;
     *.zip)
        # unzip doesn't have a standard --strip-components
        # Workaround: extract to a subdir and move contents up if stripping

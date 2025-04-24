@@ -56,8 +56,16 @@ func testInstallScript(t *testing.T, repo, binaryName, versionFlag, sha string) 
 		t.Fatalf("Failed to init binstaller config: %v", err)
 	}
 
+	// Check that the config file content
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("Failed to read config file: %v", err)
+	}
+	// Log the config file content
+	t.Logf("Config file content:\n%s", configContent)
+
 	// Generate installer script
-	installerPath := filepath.Join(tempDir, binaryName+".binstaller.yml")
+	installerPath := filepath.Join(tempDir, binaryName+".binstaller.sh")
 	genCmd := exec.Command(binstallerPath, "gen", "--config", configPath, "-o", installerPath)
 	genCmd.Stderr = os.Stderr
 	if err := genCmd.Run(); err != nil {

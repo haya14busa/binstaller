@@ -55,11 +55,20 @@ checksum:
 	}
 
 	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               "mycli",
-		Repo:               "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{},
-		DefaultVersion:     "latest",
+		Schema: "v1",
+		Name:   "mycli",
+		Repo:   "myowner/myrepo",
+		SupportedPlatforms: []spec.Platform{
+			{OS: "darwin", Arch: "amd64"},
+			{OS: "darwin", Arch: "arm64"},
+			{OS: "linux", Arch: "386"},
+			{OS: "linux", Arch: "amd64"},
+			{OS: "linux", Arch: "arm64"},
+			{OS: "windows", Arch: "386"},
+			{OS: "windows", Arch: "amd64"},
+			{OS: "windows", Arch: "arm64"},
+		},
+		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
@@ -112,11 +121,20 @@ checksum:
 	expectedName := "myrepo"
 
 	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               expectedName,
-		Repo:               "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{},
-		DefaultVersion:     "latest",
+		Schema: "v1",
+		Name:   expectedName,
+		Repo:   "myowner/myrepo",
+		SupportedPlatforms: []spec.Platform{
+			{OS: "darwin", Arch: "amd64"},
+			{OS: "darwin", Arch: "arm64"},
+			{OS: "linux", Arch: "386"},
+			{OS: "linux", Arch: "amd64"},
+			{OS: "linux", Arch: "arm64"},
+			{OS: "windows", Arch: "386"},
+			{OS: "windows", Arch: "amd64"},
+			{OS: "windows", Arch: "arm64"},
+		},
+		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
@@ -165,11 +183,20 @@ checksum:
 	}
 
 	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               "mycli",
-		Repo:               "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{},
-		DefaultVersion:     "latest",
+		Schema: "v1",
+		Name:   "mycli",
+		Repo:   "myowner/myrepo",
+		SupportedPlatforms: []spec.Platform{
+			{OS: "darwin", Arch: "amd64"},
+			{OS: "darwin", Arch: "arm64"},
+			{OS: "linux", Arch: "386"},
+			{OS: "linux", Arch: "amd64"},
+			{OS: "linux", Arch: "arm64"},
+			{OS: "windows", Arch: "386"},
+			{OS: "windows", Arch: "amd64"},
+			{OS: "windows", Arch: "arm64"},
+		},
+		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
@@ -213,11 +240,20 @@ checksum:
 	}
 
 	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               "mycli",
-		Repo:               "myowner/myrepo",
-		SupportedPlatforms: []spec.Platform{},
-		DefaultVersion:     "latest",
+		Schema: "v1",
+		Name:   "mycli",
+		Repo:   "myowner/myrepo",
+		SupportedPlatforms: []spec.Platform{
+			{OS: "darwin", Arch: "amd64"},
+			{OS: "darwin", Arch: "arm64"},
+			{OS: "linux", Arch: "386"},
+			{OS: "linux", Arch: "amd64"},
+			{OS: "linux", Arch: "arm64"},
+			{OS: "windows", Arch: "386"},
+			{OS: "windows", Arch: "amd64"},
+			{OS: "windows", Arch: "arm64"},
+		},
+		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
@@ -258,10 +294,12 @@ builds:
     goarch:
       - amd64
       - arm64
-  - goos:
+  - id: mycli2
+    goos:
       - windows
     goarch:
       - amd64
+      - arm64
     ignore:
       - goos: windows
         goarch: amd64
@@ -279,6 +317,7 @@ checksum:
 		{OS: "linux", Arch: "arm64"},
 		{OS: "darwin", Arch: "amd64"},
 		{OS: "darwin", Arch: "arm64"},
+		{OS: "windows", Arch: "arm64"},
 		// windows/amd64 is ignored in the goreleaser config
 	}
 
@@ -331,10 +370,6 @@ builds:
     goarm:
       - "6"
       - "7"
-  - goos:
-      - darwin
-    goarch:
-      - arm64
     ignore:
       - goos: linux
         goarch: arm
@@ -350,7 +385,6 @@ checksum:
 
 	expectedPlatforms := []spec.Platform{
 		{OS: "linux", Arch: "armv7"},
-		{OS: "darwin", Arch: "arm64"},
 		// linux/arm/6 is ignored
 	}
 
@@ -426,11 +460,10 @@ checksum:
 	expectedTemplate := "${NAME}_${OS}_${ARCH}" // Corrected template
 
 	expectedSpec := &spec.InstallSpec{
-		Schema:             "v1",
-		Name:               "sigspy",
-		Repo:               "kubernetes-sigs/sigspy",
-		SupportedPlatforms: []spec.Platform{}, // Assuming no builds defined in this minimal config
-		DefaultVersion:     "latest",
+		Schema:         "v1",
+		Name:           "sigspy",
+		Repo:           "kubernetes-sigs/sigspy",
+		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         expectedTemplate + "${EXT}",
 			DefaultExtension: ".tar.gz", // Corrected expected value
@@ -448,6 +481,16 @@ checksum:
 			Algorithm: "sha256",
 		},
 		Unpack: nil,
+		SupportedPlatforms: []spec.Platform{
+			{OS: "darwin", Arch: "amd64"},
+			{OS: "darwin", Arch: "arm64"},
+			{OS: "linux", Arch: "386"},
+			{OS: "linux", Arch: "amd64"},
+			{OS: "linux", Arch: "arm64"},
+			{OS: "windows", Arch: "386"},
+			{OS: "windows", Arch: "amd64"},
+			{OS: "windows", Arch: "arm64"},
+		},
 	}
 
 	if diff := cmp.Diff(expectedSpec, installSpec); diff != "" {

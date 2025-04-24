@@ -60,6 +60,15 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 
 	gorelCtx := gorelcontext.New(*project)
 	for _, defaulter := range defaults.Defaulters {
+		// Call building binaries defaulter to fill default build config
+		// to populate correct supported_platforms.
+		//
+		// We should not call needless defaulter, especially "project name" because
+		// it fills project name with git remote data and breaks config if
+		// binstaller is called outside the target repo.
+		if defaulter.String() != "building binaries" {
+			continue
+		}
 		log.Debugf("setting defaults for %s", defaulter)
 		if err := defaulter.Default(gorelCtx); err != nil {
 			return nil, errors.Wrap(err, "failed to set defaults")
@@ -96,18 +105,16 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		log.Debugf("Using name override: %s", s.Name)
 	} else if project.ProjectName != "" {
 		s.Name = project.ProjectName
+		log.Debugf("Using goreleaser project_name as name: %s", project.ProjectName)
 	}
 	// Name inference from Repo will happen after Repo is determined
 
-	// Determine Repo: Override > release.github > release.gitea
+	// Determine Repo: Override > release.github
 	if repoOverride != "" {
 		s.Repo = normalizeRepo(repoOverride) // Normalize the override
 		log.Debugf("Using repo override: %s", s.Repo)
 	} else if project.Release.GitHub.Owner != "" && project.Release.GitHub.Name != "" {
 		s.Repo = fmt.Sprintf("%s/%s", project.Release.GitHub.Owner, project.Release.GitHub.Name)
-	} else if project.Release.Gitea.Owner != "" && project.Release.Gitea.Name != "" {
-		s.Repo = fmt.Sprintf("%s/%s", project.Release.Gitea.Owner, project.Release.Gitea.Name)
-		log.Warnf("detected Gitea repo, using it for spec.Repo")
 	} else {
 		log.Warnf("could not determine repository owner/name from goreleaser config or override. Use --repo flag.")
 	}

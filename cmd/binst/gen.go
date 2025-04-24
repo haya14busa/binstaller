@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -52,10 +53,21 @@ generates a POSIX-compatible shell installer script.`,
 
 		// Read the InstallSpec YAML file
 		log.Debugf("Reading InstallSpec from: %s", cfgFile)
-		yamlData, err := os.ReadFile(cfgFile)
-		if err != nil {
-			log.WithError(err).Errorf("Failed to read install spec file: %s", cfgFile)
-			return fmt.Errorf("failed to read install spec file %s: %w", cfgFile, err)
+		var yamlData []byte
+		var err error
+		if cfgFile == "-" {
+			log.Debug("Reading install spec from stdin")
+			yamlData, err = io.ReadAll(os.Stdin)
+			if err != nil {
+				log.WithError(err).Error("Failed to read install spec from stdin")
+				return fmt.Errorf("failed to read install spec from stdin: %w", err)
+			}
+		} else {
+			yamlData, err = os.ReadFile(cfgFile)
+			if err != nil {
+				log.WithError(err).Errorf("Failed to read install spec file: %s", cfgFile)
+				return fmt.Errorf("failed to read install spec file %s: %w", cfgFile, err)
+			}
 		}
 
 		// Unmarshal YAML into InstallSpec struct
@@ -66,11 +78,6 @@ generates a POSIX-compatible shell installer script.`,
 			log.WithError(err).Errorf("Failed to unmarshal install spec YAML from: %s", cfgFile)
 			return fmt.Errorf("failed to unmarshal install spec YAML from %s: %w", cfgFile, err)
 		}
-
-		// Apply defaults defined in the spec package (already done in Generate now)
-		// installSpec.SetDefaults() // Defaults are applied within shell.Generate
-
-		// TODO: Add validation for the loaded InstallSpec?
 
 		// Generate the script using the internal shell generator
 		log.Info("Generating installer script...")

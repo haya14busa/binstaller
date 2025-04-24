@@ -368,6 +368,26 @@ execute() {
     log_info "Extracting ${ASSET_FILENAME}..."
     (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
   fi
+  BINARY_NAME='slsa-verifier'
+  if [ "${UNAME_OS}" = "windows" ]; then
+    case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
+  fi
+
+  if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
+    BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
+  else
+    BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
+    if [ "${UNAME_OS}" = "windows" ]; then
+      case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
+    fi
+  fi
+
+  # Install the binary
+  INSTALL_PATH="${BINDIR}/${BINARY_NAME}"
+  log_info "Installing binary to ${INSTALL_PATH}"
+  test ! -d "${BINDIR}" && install -d "${BINDIR}"
+  install "${BINARY_PATH}" "${INSTALL_PATH}"
+  log_info "${NAME} installation complete!"
 }
 
 # --- Configuration  ---

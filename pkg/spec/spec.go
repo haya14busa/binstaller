@@ -1,5 +1,7 @@
 package spec
 
+import "strings"
+
 // InstallSpec defines the v1 configuration schema for binstaller.
 type InstallSpec struct {
 	Schema             string             `yaml:"schema,omitempty"`          // Default: "v1"
@@ -115,9 +117,21 @@ func (s *InstallSpec) SetDefaults() {
 	if s.Asset.NamingConvention.Arch == "" {
 		s.Asset.NamingConvention.Arch = "lowercase"
 	}
-	if s.Asset.Binaries == nil && s.Name != "" && s.Asset.DefaultExtension != "" {
-		s.Asset.Binaries = []Binary{
-			{Name: s.Name, Path: s.Name},
+	if s.Name == "" && s.Repo != "" {
+		sp := strings.SplitN(s.Repo, "/", 2)
+		if len(sp) == 2 {
+			s.Name = sp[1]
+		}
+	}
+	if s.Asset.Binaries == nil && s.Name != "" {
+		if s.Asset.DefaultExtension != "" {
+			s.Asset.Binaries = []Binary{
+				{Name: s.Name, Path: s.Name},
+			}
+		} else {
+			s.Asset.Binaries = []Binary{
+				{Name: s.Name, Path: "${ASSET_FILENAME}"},
+			}
 		}
 	}
 	if s.Checksums != nil {

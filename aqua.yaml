@@ -15,3 +15,4 @@ packages:
 - name: mvdan/sh@v3.11.0
 - name: koalaman/shellcheck@v0.10.0
 - name: golangci/golangci-lint@v2.1.2
+- name: shenwei356/rush@v0.6.1

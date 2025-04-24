@@ -336,9 +336,13 @@ resolve_asset_filename() {
   then
     OS='apple-darwin'
   fi
-  if [ "${UNAME_OS}" = 'linux' ] && true
+  if [ "${UNAME_OS}" = 'linux' ] && [ "${UNAME_ARCH}" = 'arm64' ] && true
   then
     OS='unknown-linux-gnu'
+  fi
+  if [ "${UNAME_OS}" = 'linux' ] && [ "${UNAME_ARCH}" = 'amd64' ] && true
+  then
+    OS='unknown-linux-musl'
   fi
   if [ "${UNAME_ARCH}" = 'arm64' ] && true
   then

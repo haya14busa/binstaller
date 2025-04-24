@@ -1,5 +1,4 @@
 schema: v1
-name: slsa-verifier
 repo: slsa-framework/slsa-verifier
 default_version: latest
 asset:

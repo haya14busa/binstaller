@@ -336,7 +336,7 @@ resolve_asset_filename() {
   ASSET_FILENAME=""
   if [ "${UNAME_ARCH}" = 'amd64' ] && true
   then
-    ARCH='x86'
+    ARCH='x86_64'
   fi
   if [ "${UNAME_ARCH}" = '386' ] && true
   then

@@ -29,17 +29,12 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 	// Apply spec defaults first - this is still useful for the spec structure itself
 	installSpec.SetDefaults()
 
-	hashFunc := hashSHA256
-	if installSpec.Checksums != nil && installSpec.Checksums.Algorithm == "sha1" {
-		hashFunc = hashSHA1
-	}
-
 	// --- Prepare Template Data ---
 	// Only pass static data known at generation time, plus the shell functions
 	data := templateData{
 		InstallSpec:    installSpec,
 		Shlib:          shlib,
-		HashFunctions:  hashFunc,
+		HashFunctions:  hashFunc(installSpec),
 		ShellFunctions: shellFunctions,
 	}
 
@@ -61,6 +56,22 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func hashFunc(installSpec *spec.InstallSpec) string {
+	algo := ""
+	if installSpec.Checksums != nil {
+		algo = installSpec.Checksums.Algorithm
+	}
+	switch algo {
+	case "sha1":
+		return hashSHA1
+	case "md5":
+		return hashMD5
+	case "sha256":
+		return hashSHA256
+	}
+	return hashSHA256
 }
 
 // createFuncMap defines the functions available to the Go template.

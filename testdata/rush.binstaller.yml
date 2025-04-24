@@ -1,0 +1,14 @@
+schema: v1
+repo: shenwei356/rush
+default_version: latest
+asset:
+    template: ${NAME}_${OS}_${ARCH}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - { when: { os: windows }, ext: .exe.tar.gz }
+checksums:
+    template: ${ASSET_FILENAME}.md5.txt
+    algorithm: md5
+unpack:
+    strip_components: 0
+

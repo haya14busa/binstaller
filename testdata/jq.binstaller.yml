@@ -1,0 +1,13 @@
+schema: v1
+repo: jqlang/jq
+asset:
+    template: ${NAME}-${OS}-${ARCH}
+    rules:
+        - when: { os: darwin }
+          os: macos
+        - when:
+            arch: "386"
+          arch: i386
+checksums:
+    template: sha256sum.txt
+    algorithm: sha256

@@ -28,7 +28,7 @@ EOF
 
 parse_args() {
   BINDIR="./bin"
-  while getopts "b:d:h?x" arg; do
+  while getopts "b:dh?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;
     d) log_set_priority 10 ;;

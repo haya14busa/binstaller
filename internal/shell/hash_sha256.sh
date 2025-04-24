@@ -21,18 +21,7 @@ hash_sha256() {
 hash_verify() {
   TARGET=$1
   checksums=$2
-
-  if [ -z "$checksums" ]; then
-    log_err "hash_verify checksum file not specified in arg2"
-    return 1
-  fi
-
-  # http://stackoverflow.com/questions/2664740/extract-file-basename-without-path-and-extension-in-bash
-  BASENAME=${TARGET##*/}
-
-  want=$(grep -E "[[:space:]]${BASENAME}$" "${checksums}" 2>/dev/null | tr '\t' ' ' | cut -d ' ' -f 1)
-
-  # if file does not exist $want will be empty
+  want=$(extract_hash "${TARGET}" "${checksums}")
   if [ -z "$want" ]; then
     log_err "hash_verify unable to find checksum for '${TARGET}' in '${checksums}'"
     return 1

@@ -8,11 +8,11 @@ import _ "embed"
 //go:embed template.tmpl.sh
 var mainScriptTemplate string
 
-// shellFunctions contains the library of POSIX shell functions.
+// shlib contains the library of POSIX shell functions.
 // Adapted from https://github.com/client9/shlib
 //
 //go:embed shlib.sh
-var shellFunctions string
+var shlib string
 
 /*
 shlib.sh generation command
@@ -39,5 +39,5 @@ var hashSHA256 string
 //go:embed hash_sha1.sh
 var hashSHA1 string
 
-//go:embed untar.sh
-var untar string
+//go:embed shell_functions.sh
+var shellFunctions string

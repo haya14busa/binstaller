@@ -15,9 +15,9 @@ import (
 // It only includes static data from the spec.
 type templateData struct {
 	*spec.InstallSpec        // Embed the original spec for access to fields like Name, Repo, Asset, Checksums, etc.
-	ShellFunctions    string // The content of the shell function library
+	Shlib             string // The content of the shell function library
 	HashFunctions     string
-	UntarFunction     string
+	ShellFunctions    string
 }
 
 // Generate creates the installer shell script content based on the InstallSpec.
@@ -38,14 +38,13 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 	// Only pass static data known at generation time, plus the shell functions
 	data := templateData{
 		InstallSpec:    installSpec,
-		ShellFunctions: shellFunctions,
+		Shlib:          shlib,
 		HashFunctions:  hashFunc,
-		UntarFunction:  untar,
+		ShellFunctions: shellFunctions,
 	}
 
 	// --- Prepare Template ---
 	// The template now needs to contain the logic for runtime detection and asset resolution
-	// It will include {{ .ShellFunctions }} explicitly.
 	funcMap := createFuncMap() // Keep helper funcs like default, tolower etc.
 
 	tmpl, err := template.New("installer").Funcs(funcMap).Parse(mainScriptTemplate) // Parse only the main template

@@ -20,11 +20,11 @@ EOF
   exit 2
 }
 
-{{ .ShellFunctions }}
+{{ .Shlib }}
 
 {{ .HashFunctions }}
 
-{{ .UntarFunction }}
+{{ .ShellFunctions }}
 
 parse_args() {
   BINDIR="./bin"

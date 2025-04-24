@@ -1,0 +1,21 @@
+schema: v1
+name: bat
+repo: sharkdp/bat
+default_version: latest
+asset:
+    template: ${NAME}-v${VERSION}-${ARCH}-${OS}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - when: { os: darwin }
+          os: apple-darwin
+        - when: { os: linux }
+          os: unknown-linux-gnu
+        - when: { arch: arm64 }
+          arch: aarch64
+        - when: { arch: amd64 }
+          arch: x86_64
+    naming_convention:
+        os: lowercase
+        arch: lowercase
+unpack:
+  strip_components: 1

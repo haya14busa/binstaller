@@ -1,0 +1,21 @@
+schema: v1
+name: hugo
+repo: gohugoio/hugo
+default_version: latest
+asset:
+    template: ${NAME}_extended_withdeploy_${VERSION}_${OS}-${ARCH}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - when:
+            os: darwin
+          arch: universal
+        - when:
+            os: linux
+            arch: armv7
+          arch: arm
+    naming_convention:
+        os: lowercase
+        arch: lowercase
+checksums:
+    template: ${NAME}_${VERSION}_checksums.txt
+    algorithm: sha256

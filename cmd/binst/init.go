@@ -76,6 +76,9 @@ settings from a source like a GoReleaser config file or a GitHub repository.`,
 			log.WithError(err).Error("Failed to detect install spec")
 			return fmt.Errorf("failed to detect install spec: %w", err)
 		}
+		if installSpec.Schema == "" {
+			installSpec.Schema = "v1"
+		}
 		log.Info("Successfully detected InstallSpec")
 
 		// Marshal the spec to YAML

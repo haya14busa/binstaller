@@ -1,0 +1,25 @@
+schema: v1
+name: sigspy
+repo: actionutils/sigspy
+default_version: latest
+asset:
+    template: ${NAME}_${OS}_${ARCH}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - when:
+            arch: amd64
+          arch: x86
+        - when:
+            arch: "386"
+          arch: i386
+        - when:
+            os: windows
+          ext: .zip
+    naming_convention:
+        os: titlecase
+        arch: lowercase
+checksums:
+    template: checksums.txt
+    algorithm: sha256
+unpack:
+    strip_components: 0

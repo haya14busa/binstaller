@@ -1,0 +1,12 @@
+schema: v1
+name: ghq
+repo: x-motemen/ghq
+default_version: latest
+asset:
+    template: ${NAME}_${OS}_${ARCH}${EXT}
+    default_extension: .zip
+checksums:
+    template: SHASUMS
+    algorithm: sha1
+unpack:
+    strip_components: 1

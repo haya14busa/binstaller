@@ -165,8 +165,16 @@ parse_args "$@"
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
 ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
-UNAME_OS="${OS}"
-UNAME_ARCH="${ARCH}"
+{{ with .Asset.Rules }}
+{{- range . }}
+{{- if .When.OS -}} UNAME_OS="${OS}" {{- break }}{{- end }}
+{{- end }}
+{{- end }}
+{{ with .Asset.Rules }}
+{{- range . }}
+{{- if .When.Arch -}} UNAME_ARCH="${ARCH}" {{- break }}{{ end }}
+{{- end }}
+{{- end }}
 log_info "Detected Platform: ${OS}/${ARCH}"
 
 # --- Validate platform ---

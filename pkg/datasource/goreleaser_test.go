@@ -421,11 +421,6 @@ func cleanupTempFile(file *os.File) {
 	os.Remove(file.Name())
 }
 
-// Helper function to get a pointer to an int
-func intPtr(i int) *int {
-	return &i
-}
-
 // sortPlatforms sorts a slice of spec.Platform for deterministic comparison.
 func sortPlatforms(platforms []spec.Platform) {
 	// Simple sort by OS then Arch

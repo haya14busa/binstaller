@@ -28,12 +28,12 @@ EOF
 
 parse_args() {
   BINDIR="./bin"
-  while getopts "b:dt:h?x" arg; do
+  while getopts "b:dh?x" arg; do
     case "$arg" in
-      b) BINDIR="$OPTARG" ;;
-      d) log_set_priority 10 ;;
-      h | \?) usage "$0" ;;
-      x) set -x ;;
+    b) BINDIR="$OPTARG" ;;
+    d) log_set_priority 10 ;;
+    h | \?) usage "$0" ;;
+    x) set -x ;;
     esac
   done
   shift $((OPTIND - 1))
@@ -44,7 +44,10 @@ tag_to_version() {
   if [ "$TAG" = "latest" ]; then
     log_info "checking GitHub for latest tag"
     REALTAG=$(github_release "${REPO}" "${TAG}") && true
-    test -n "$REALTAG" || { log_crit "Could not determine latest tag for ${REPO}"; exit 1; }
+    test -n "$REALTAG" || {
+      log_crit "Could not determine latest tag for ${REPO}"
+      exit 1
+    }
   else
     # Assume TAG is a valid tag/version string
     REALTAG="$TAG"
@@ -62,21 +65,24 @@ capitalize() {
   input="$1"
   first_char=$(printf "%s" "$input" | cut -c1)
   first_upper=$(printf "%s" "$first_char" | tr '[:lower:]' '[:upper:]')
-  printf "%s%s\n" "$first_upper" $(printf "%s" "$input" | cut -c2-)
+  printf "%s%s\n" "$first_upper" "$(printf "%s" "$input" | cut -c2-)"
 }
 {{- end }}
 
 resolve_asset_filename() {
   {{ if eq .Asset.NamingConvention.OS "titlecase" -}}
-  OS=$(capitalize $OS)
+  OS="$(capitalize "${OS}")"
   {{- end }}
   # --- Apply Rules ---
   ASSET_FILENAME=""
   {{- with .Asset.Rules }}
   {{- range . }}
-  if {{- if .When.OS }} [ "${UNAME_OS}" = '{{.When.OS}}' ] && {{- end }}
-      {{- if .When.Arch }} [ "${UNAME_ARCH}" = '{{.When.Arch}}' ] && {{- end }}
-      {{- " true" }}; then {{- "\n   " -}}
+  if
+    {{- if .When.OS }} [ "${UNAME_OS}" = '{{.When.OS}}' ] && {{- end }}
+    {{- if .When.Arch }} [ "${UNAME_ARCH}" = '{{.When.Arch}}' ] && {{- end }}
+    {{- " true" }}
+  then
+    {{- "\n   " -}}
     {{- if .OS }} OS='{{ .OS }}' {{- end }}
     {{- if .Arch }} ARCH='{{ .Arch }}' {{- end }}
     {{- if .Ext }} EXT='{{ .Ext }}' {{- end }}
@@ -120,7 +126,7 @@ execute() {
 
   BINARY_NAME="${NAME}"
   if [ "${OS}" = "windows" ]; then
-     case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
+    case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
   fi
 
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
@@ -131,8 +137,8 @@ execute() {
     (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
     BINARY_PATH="${TMPDIR}/${BINARY_NAME}"
     if [ -z "$BINARY_PATH" ]; then
-        log_crit "Could not find binary '${BINARY_NAME}'"
-        exit 1
+      log_crit "Could not find binary '${BINARY_NAME}'"
+      exit 1
     fi
   fi
 
@@ -159,8 +165,16 @@ parse_args "$@"
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
 ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
-UNAME_OS="${OS}"
-UNAME_ARCH="${ARCH}"
+{{ with .Asset.Rules }}
+{{- range . }}
+{{- if .When.OS -}} UNAME_OS="${OS}" {{- break }}{{- end }}
+{{- end }}
+{{- end }}
+{{ with .Asset.Rules }}
+{{- range . }}
+{{- if .When.Arch -}} UNAME_ARCH="${ARCH}" {{- break }}{{ end }}
+{{- end }}
+{{- end }}
 log_info "Detected Platform: ${OS}/${ARCH}"
 
 # --- Validate platform ---

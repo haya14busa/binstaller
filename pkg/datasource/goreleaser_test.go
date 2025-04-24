@@ -71,7 +71,7 @@ checksum:
 		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz", // Corrected expected value
+			DefaultExtension: ".tar.gz",
 			Rules: []spec.AssetRule{
 				{
 					When: spec.PlatformCondition{OS: "windows"},
@@ -137,7 +137,7 @@ checksum:
 		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz", // Corrected expected value
+			DefaultExtension: ".tar.gz",
 			Rules: []spec.AssetRule{
 				{
 					When: spec.PlatformCondition{OS: "windows"},
@@ -199,7 +199,7 @@ checksum:
 		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz", // Corrected expected value
+			DefaultExtension: ".tar.gz",
 			Rules:            []spec.AssetRule{},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "titlecase",
@@ -256,7 +256,7 @@ checksum:
 		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}",
-			DefaultExtension: ".tar.gz", // Corrected expected value
+			DefaultExtension: ".tar.gz",
 			Rules:            []spec.AssetRule{},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "lowercase",
@@ -333,8 +333,8 @@ checksum:
 		DefaultVersion:     "latest",
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}", // Default template as no archives defined
-			DefaultExtension: ".tar.gz",                                // Corrected expected value
-			Rules:            nil,
+			DefaultExtension: ".tar.gz",
+			Rules:            []spec.AssetRule{},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "lowercase",
 				Arch: "lowercase",
@@ -401,7 +401,7 @@ checksum:
 		Asset: spec.AssetConfig{
 			Template:         "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}", // Default template as no archives defined
 			DefaultExtension: ".tar.gz",                                // Corrected expected value
-			Rules:            nil,
+			Rules:            []spec.AssetRule{},
 			NamingConvention: &spec.NamingConvention{
 				OS:   "lowercase",
 				Arch: "lowercase",
@@ -421,13 +421,13 @@ checksum:
 	}
 }
 
-func TestGoReleaserAdapter_Detect_SigspyTemplate(t *testing.T) {
+func TestGoReleaserAdapter_Detect_ConditinalNameTemplate(t *testing.T) {
 	goreleaserConfigContent := `
 version: 2
 project_name: sigspy
 release:
   github:
-    owner: kubernetes-sigs
+    owner: actionutils
     name: sigspy
 archives:
   - name_template: >-
@@ -457,23 +457,23 @@ checksum:
 	// {{- if .Arm }}v{{ .Arm }}{{ end }}
 	//   - if "${ARM}" is true (non-empty string)
 	//   - v{{ .Arm }} is executed -> v${ARM}
-	expectedTemplate := "${NAME}_${OS}_${ARCH}" // Corrected template
+	expectedTemplate := "${NAME}_${OS}_${ARCH}"
 
 	expectedSpec := &spec.InstallSpec{
 		Schema:         "v1",
 		Name:           "sigspy",
-		Repo:           "kubernetes-sigs/sigspy",
+		Repo:           "actionutils/sigspy",
 		DefaultVersion: "latest",
 		Asset: spec.AssetConfig{
 			Template:         expectedTemplate + "${EXT}",
-			DefaultExtension: ".tar.gz", // Corrected expected value
+			DefaultExtension: ".tar.gz",
 			Rules: []spec.AssetRule{
 				{When: spec.PlatformCondition{Arch: "amd64"}, Arch: "x86_64"},
 				{When: spec.PlatformCondition{Arch: "386"}, Arch: "i386"},
 			},
 			NamingConvention: &spec.NamingConvention{
-				OS:   "titlecase", // Corrected expected value
-				Arch: "lowercase", // Default
+				OS:   "titlecase",
+				Arch: "lowercase",
 			},
 		},
 		Checksums: &spec.ChecksumConfig{

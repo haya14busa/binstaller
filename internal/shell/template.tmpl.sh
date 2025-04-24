@@ -50,7 +50,7 @@ tag_to_version() {
     REALTAG="$TAG"
   fi
   if test -z "$REALTAG"; then
-    log_crit "unable to find '${TAG}' - use 'latest' or see https://github.com/${PREFIX}/releases for details"
+    log_crit "unable to find '${TAG}' - use 'latest' or see https://github.com/${REPO}/releases for details"
     exit 1
   fi
   VERSION=${REALTAG#v} # Strip leading 'v'
@@ -102,73 +102,56 @@ execute() {
   fi
 
   # --- Download and Verify ---
-  tmpdir=$(mktemp -d)
-  log_debug "Downloading files into ${tmpdir}"
+  TMPDIR=$(mktemp -d)
+  trap 'rm -rf -- "$TMPDIR"' EXIT HUP INT TERM
+  log_debug "Downloading files into ${TMPDIR}"
   log_info "Downloading ${ASSET_URL}"
-  http_download "${tmpdir}/${ASSET_FILENAME}" "${ASSET_URL}" || { rm -rf "${tmpdir}"; exit 1; }
+  http_download "${TMPDIR}/${ASSET_FILENAME}" "${ASSET_URL}"
 
   if [ -n "$CHECKSUM_URL" ]; then
     # Download checksum file
     log_info "Downloading checksums from ${CHECKSUM_URL}"
-    http_download "${tmpdir}/${CHECKSUM_FILENAME}" "${CHECKSUM_URL}" || { rm -rf "${tmpdir}"; exit 1; }
+    http_download "${TMPDIR}/${CHECKSUM_FILENAME}" "${CHECKSUM_URL}"
     log_info "Verifying checksum ..."
-    hash_verify "${tmpdir}/${ASSET_FILENAME}" "${tmpdir}/${CHECKSUM_FILENAME}" || { rm -rf "${tmpdir}"; exit 1; }
+    hash_verify "${TMPDIR}/${ASSET_FILENAME}" "${TMPDIR}/${CHECKSUM_FILENAME}"
   else
     log_info "No checksum URL or embedded hash found, skipping verification."
   fi
 
-  # --- Extract and Install ---
-  log_info "Extracting ${ASSET_FILENAME}..."
-  (cd "${tmpdir}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}") || { rm -rf "${tmpdir}"; exit 1; }
-
-  # Determine binary name based on spec
   BINARY_NAME="${NAME}"
-  INSTALL_BIN_NAME="$BINARY_NAME"
-  if [ "$OS" = "windows" ]; then
-     case "$INSTALL_BIN_NAME" in *.exe) ;; *) INSTALL_BIN_NAME="${INSTALL_BIN_NAME}.exe" ;; esac
+  if [ "${OS}" = "windows" ]; then
+     case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
   fi
 
-  # Find the binary
-  extracted_binary_path=""
-  if [ -f "${tmpdir}/${BINARY_NAME}" ]; then
-     extracted_binary_path="${tmpdir}/${BINARY_NAME}"
-  elif [ "$OS" = "windows" ] && [ -f "${tmpdir}/${BINARY_NAME}.exe" ]; then
-     extracted_binary_path="${tmpdir}/${BINARY_NAME}.exe"
+  if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
+    log_debug "Target is raw binary"
+    BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
   else
-     log_debug "Searching for ${BINARY_NAME} (or .exe) in subdirectories..."
-     found_path=$(find "${tmpdir}" -name "${BINARY_NAME}" -type f -print -quit)
-     if [ -z "$found_path" ] && [ "$OS" = "windows" ]; then
-        found_path=$(find "${tmpdir}" -name "${BINARY_NAME}.exe" -type f -print -quit)
-     fi
-     if [ -n "$found_path" ]; then extracted_binary_path="$found_path"; fi
+    log_info "Extracting ${ASSET_FILENAME}..."
+    (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
+    BINARY_PATH="${TMPDIR}/${BINARY_NAME}"
+    if [ -z "$BINARY_PATH" ]; then
+        log_crit "Could not find binary '${BINARY_NAME}'"
+        exit 1
+    fi
   fi
-
-  if [ -z "$extracted_binary_path" ]; then
-      log_crit "Could not find binary '${BINARY_NAME}' after extraction in ${tmpdir}"
-      rm -rf "${tmpdir}"; exit 1
-  fi
-  log_debug "Found binary at: ${extracted_binary_path}"
 
   # Install the binary
-  install_path="${BINDIR}/${INSTALL_BIN_NAME}"
-  log_info "Installing binary to ${install_path}"
+  INSTALL_PATH="${BINDIR}/${BINARY_NAME}"
+  log_info "Installing binary to ${INSTALL_PATH}"
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
-  install "${extracted_binary_path}" "${install_path}"
+  install "${BINARY_PATH}" "${INSTALL_PATH}"
   log_info "${NAME} installation complete!"
-
-  # --- Cleanup ---
-  rm -rf "${tmpdir}"
 }
 
 # --- Configuration  ---
-NAME="{{ .Name }}"
-REPO="{{ .Repo }}"
-EXT="{{ .Asset.DefaultExtension }}"
-PREFIX="${REPO}"
+NAME='{{ .Name }}'
+REPO='{{ .Repo }}'
+EXT='{{ .Asset.DefaultExtension }}'
 
 # use in logging routines
 log_prefix() {
-  echo "$PREFIX"
+  echo "${REPO}"
 }
 
 parse_args "$@"

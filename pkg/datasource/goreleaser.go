@@ -59,6 +59,11 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 	}
 
 	gorelCtx := gorelcontext.New(*project)
+	needs := map[string]bool{
+		"building binaries":     true,
+		"calculating checksums": true,
+		"archives":              true,
+	}
 	for _, defaulter := range defaults.Defaulters {
 		// Call building binaries defaulter to fill default build config
 		// to populate correct supported_platforms.
@@ -66,7 +71,7 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 		// We should not call needless defaulter, especially "project name" because
 		// it fills project name with git remote data and breaks config if
 		// binstaller is called outside the target repo.
-		if defaulter.String() != "building binaries" {
+		if !needs[defaulter.String()] {
 			continue
 		}
 		log.Debugf("setting defaults for %s", defaulter)
@@ -135,10 +140,6 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 
 	// --- Checksums ---
 	if !project.Checksum.Disable {
-		if project.Checksum.NameTemplate == "" {
-			// default: https://goreleaser.com/customization/checksum/
-			project.Checksum.NameTemplate = "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
-		}
 		checksumTemplate, err := translateTemplate(project.Checksum.NameTemplate)
 		if err != nil {
 			log.WithError(err).Warnf("Failed to translate checksum template, using raw: %s", project.Checksum.NameTemplate)

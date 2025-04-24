@@ -1,0 +1,7 @@
+schema: v1
+repo: slsa-framework/slsa-verifier
+default_version: latest
+asset:
+    template: ${NAME}-${OS}-${ARCH}
+    default_extension: '' # raw
+

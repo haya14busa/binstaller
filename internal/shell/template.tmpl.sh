@@ -124,21 +124,25 @@ execute() {
     log_info "No checksum URL or embedded hash found, skipping verification."
   fi
 
-  BINARY_NAME="${NAME}"
-  if [ "${OS}" = "windows" ]; then
+  if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
+    log_debug "Target is raw binary"
+  else
+    log_info "Extracting ${ASSET_FILENAME}..."
+    (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
+  fi
+
+  {{- range $binary := .Asset.Binaries }}
+  BINARY_NAME='{{ $binary.Name }}'
+  if [ "${UNAME_OS}" = "windows" ]; then
     case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
   fi
 
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
-    log_debug "Target is raw binary"
     BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
   else
-    log_info "Extracting ${ASSET_FILENAME}..."
-    (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
-    BINARY_PATH="${TMPDIR}/${BINARY_NAME}"
-    if [ -z "$BINARY_PATH" ]; then
-      log_crit "Could not find binary '${BINARY_NAME}'"
-      exit 1
+    BINARY_PATH="${TMPDIR}/{{ $binary.Path }}"
+    if [ "${UNAME_OS}" = "windows" ]; then
+      case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
     fi
   fi
 
@@ -148,6 +152,7 @@ execute() {
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   install "${BINARY_PATH}" "${INSTALL_PATH}"
   log_info "${NAME} installation complete!"
+  {{- end }}
 }
 
 # --- Configuration  ---
@@ -165,11 +170,7 @@ parse_args "$@"
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
 ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
-{{ with .Asset.Rules }}
-{{- range . }}
-{{- if .When.OS -}} UNAME_OS="${OS}" {{- break }}{{- end }}
-{{- end }}
-{{- end }}
+UNAME_OS="${OS}"
 {{ with .Asset.Rules }}
 {{- range . }}
 {{- if .When.Arch -}} UNAME_ARCH="${ARCH}" {{- break }}{{ end }}

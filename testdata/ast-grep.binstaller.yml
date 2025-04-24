@@ -1,0 +1,20 @@
+schema: v1
+name: sg
+repo: ast-grep/ast-grep
+default_version: latest
+asset:
+    template: app-${ARCH}-${OS}${EXT}
+    default_extension: .zip
+    rules:
+        - when: { os: windows }
+          os: pc-windows-msvc
+        - when: { os: darwin }
+          os: apple-darwin
+        - when: { os: linux }
+          os: unknown-linux-gnu
+        - when: { arch: arm64 }
+          arch: aarch64
+        - when: { arch: amd64 }
+          arch: x86_64
+        - when: { arch: 386 }
+          arch: i686

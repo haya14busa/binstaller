@@ -1,0 +1,148 @@
+schema: v1
+name: golangci-lint
+repo: golangci/golangci-lint
+supported_platforms:
+    - os: darwin
+      arch: arm7
+    - os: linux
+      arch: riscv64
+    - os: netbsd
+      arch: "386"
+    - os: netbsd
+      arch: ppc64le
+    - os: linux
+      arch: arm7
+    - os: freebsd
+      arch: riscv64
+    - os: illumos
+      arch: arm7
+    - os: illumos
+      arch: s390x
+    - os: illumos
+      arch: arm64
+    - os: darwin
+      arch: arm64
+    - os: freebsd
+      arch: ppc64le
+    - os: freebsd
+      arch: loong64
+    - os: illumos
+      arch: amd64
+    - os: illumos
+      arch: mips64le
+    - os: windows
+      arch: amd64
+    - os: linux
+      arch: arm6
+    - os: netbsd
+      arch: riscv64
+    - os: illumos
+      arch: riscv64
+    - os: darwin
+      arch: arm6
+    - os: linux
+      arch: "386"
+    - os: linux
+      arch: loong64
+    - os: freebsd
+      arch: mips64
+    - os: netbsd
+      arch: arm7
+    - os: linux
+      arch: s390x
+    - os: windows
+      arch: arm64
+    - os: darwin
+      arch: ppc64le
+    - os: darwin
+      arch: s390x
+    - os: netbsd
+      arch: amd64
+    - os: windows
+      arch: mips64le
+    - os: linux
+      arch: amd64
+    - os: linux
+      arch: arm64
+    - os: linux
+      arch: mips64le
+    - os: freebsd
+      arch: mips64le
+    - os: netbsd
+      arch: mips64
+    - os: illumos
+      arch: loong64
+    - os: darwin
+      arch: riscv64
+    - os: windows
+      arch: "386"
+    - os: netbsd
+      arch: arm6
+    - os: netbsd
+      arch: loong64
+    - os: linux
+      arch: ppc64le
+    - os: windows
+      arch: arm7
+    - os: darwin
+      arch: amd64
+    - os: windows
+      arch: mips64
+    - os: freebsd
+      arch: arm7
+    - os: netbsd
+      arch: arm64
+    - os: illumos
+      arch: "386"
+    - os: darwin
+      arch: mips64
+    - os: freebsd
+      arch: "386"
+    - os: netbsd
+      arch: s390x
+    - os: linux
+      arch: mips64
+    - os: freebsd
+      arch: s390x
+    - os: netbsd
+      arch: mips64le
+    - os: illumos
+      arch: arm6
+    - os: illumos
+      arch: mips64
+    - os: darwin
+      arch: loong64
+    - os: windows
+      arch: loong64
+    - os: freebsd
+      arch: amd64
+    - os: freebsd
+      arch: arm6
+    - os: windows
+      arch: arm6
+    - os: darwin
+      arch: mips64le
+    - os: windows
+      arch: ppc64le
+    - os: windows
+      arch: riscv64
+    - os: illumos
+      arch: ppc64le
+    - os: windows
+      arch: s390x
+default_version: latest
+asset:
+    template: ${NAME}-${VERSION}-${OS}-${ARCH}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - when:
+            os: windows
+          ext: .zip
+    naming_convention:
+        os: lowercase
+        arch: lowercase
+checksums:
+    template: ${NAME}-${VERSION}-checksums.txt
+    algorithm: sha256
+unpack:
+    strip_components: 1

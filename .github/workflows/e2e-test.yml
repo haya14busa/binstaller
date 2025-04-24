@@ -24,14 +24,8 @@ jobs:
       with:
         go-version-file: 'go.mod'
 
-
     - name: Install dependencies
       run: go mod download
 
     - name: Run E2E Tests
       run: go test -v ./e2etest
-      env:
-        # GITHUB_TOKEN is needed for goinstaller execution
-        GITHUB_TOKEN: ${{ github.token }}
-        # GH_TOKEN is needed for gh attestation verify in the generated installer script
-        GH_TOKEN: ${{ github.token }}

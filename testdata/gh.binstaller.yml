@@ -1,0 +1,23 @@
+schema: v1
+name: gh
+repo: cli/cli
+default_version: latest
+asset:
+    template: ${NAME}_${VERSION}_${OS}_${ARCH}${EXT}
+    default_extension: .tar.gz
+    binaries:
+      - name: gh
+        path: bin/gh
+    rules:
+        - when:
+            os: darwin
+          os: macOS
+          ext: .zip
+        - when:
+            os: windows
+          ext: .zip
+checksums:
+    template: ${NAME}_${VERSION}_checksums.txt
+    algorithm: sha256
+unpack:
+    strip_components: 1

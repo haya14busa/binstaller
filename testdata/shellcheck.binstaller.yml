@@ -1,0 +1,18 @@
+schema: v1
+name: shellcheck
+repo: koalaman/shellcheck
+default_version: latest
+asset:
+    template: ${NAME}-v${VERSION}.${OS}.${ARCH}${EXT}
+    default_extension: .tar.xz
+    rules:
+        - when: { arch: arm64 }
+          arch: aarch64
+        - when: { arch: amd64 }
+          arch: x86_64
+        - when: { arch: armv6 }
+          arch: armv6hf
+    naming_convention:
+        os: lowercase
+unpack:
+    strip_components: 1

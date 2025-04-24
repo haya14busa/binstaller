@@ -1,0 +1,67 @@
+schema: v1
+name: dockle
+repo: goodwithtech/dockle
+supported_platforms:
+    - os: darwin
+      arch: amd64
+    - os: darwin
+      arch: "386"
+    - os: darwin
+      arch: arm64
+    - os: darwin
+      arch: loong64
+    - os: linux
+      arch: amd64
+    - os: linux
+      arch: armv7
+    - os: linux
+      arch: arm64
+    - os: darwin
+      arch: armv7
+    - os: linux
+      arch: "386"
+    - os: linux
+      arch: loong64
+default_version: latest
+asset:
+    template: ${NAME}_${VERSION}_${OS}-${ARCH}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - when:
+            arch: amd64
+          arch: 64bit
+        - when:
+            arch: arm
+          arch: ARM
+        - when:
+            arch: arm64
+          arch: ARM64
+        - when:
+            arch: loong64
+          arch: LOONG64
+        - when:
+            os: darwin
+          os: macOS
+        - when:
+            os: linux
+          os: Linux
+        - when:
+            os: openbsd
+          os: OpenBSD
+        - when:
+            os: netbsd
+          os: NetBSD
+        - when:
+            os: freebsd
+          os: FreeBSD
+        - when:
+            os: dragonfly
+          os: DragonFlyBSD
+        - when:
+            os: windows
+          ext: .zip
+    naming_convention:
+        os: lowercase
+        arch: lowercase
+unpack:
+    strip_components: 0

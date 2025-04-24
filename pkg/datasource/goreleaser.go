@@ -87,9 +87,6 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 		return nil, errors.Wrap(err, "failed to map goreleaser config to InstallSpec")
 	}
 
-	// Apply InstallSpec defaults
-	installSpec.SetDefaults()
-
 	log.Info("successfully detected InstallSpec from goreleaser source")
 	return installSpec, nil
 }

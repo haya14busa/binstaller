@@ -1,0 +1,18 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aquaproj/aqua/main/json-schema/aqua-yaml.json
+# aqua - Declarative CLI Version Manager
+# https://aquaproj.github.io/
+# checksum:
+#   enabled: true
+#   require_checksum: true
+#   supported_envs:
+#   - all
+registries:
+- type: standard
+  ref: v4.352.0 # renovate: depName=aquaproj/aqua-registry
+packages:
+- name: mikefarah/yq@v4.45.1
+- name: mvdan/sh@v3.11.0
+- name: koalaman/shellcheck@v0.10.0
+- name: golangci/golangci-lint@v2.1.2
+- name: shenwei356/rush@v0.6.1

@@ -1,0 +1,43 @@
+name: Test
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+      id: go
+
+    - run: make setup
+
+    - uses: aquaproj/aqua-installer@5e54e5cee8a95ee2ce7c04cb993da6dfad13e59c # v3.1.2
+      with:
+        aqua_version: v2.50.0
+
+    - run: make ci
+
+    - name: Test scripts
+      run: |
+        ./test/gen_config.sh
+        ./test/gen_installer.sh
+        ./test/all-supported-platforms-reviewdog.sh
+
+    - name: Fail if any diff exists
+      run: |
+        if ! git diff; then
+          echo "::error ::git diff detected - please commit the generated changes."
+          exit 1
+        fi
+
+    - name: Test running generated installers
+      run: |
+        ./test/run_installers.sh

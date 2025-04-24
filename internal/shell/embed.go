@@ -39,5 +39,8 @@ var hashSHA256 string
 //go:embed hash_sha1.sh
 var hashSHA1 string
 
+//go:embed hash_md5.sh
+var hashMD5 string
+
 //go:embed shell_functions.sh
 var shellFunctions string

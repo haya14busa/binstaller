@@ -89,6 +89,7 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 		}
 
 		// Asset.Template
+		// TODO: Convert Aqua asset template to InstallSpec format (e.g., "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}")
 		installSpec.Asset.Template = pkg.Asset
 
 		// SupportedPlatforms
@@ -105,13 +106,15 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 		binaries := make([]spec.Binary, 0, len(pkg.Files))
 		for _, f := range pkg.Files {
 			if f.Name != "" {
-				binaries = append(binaries, spec.Binary{Name: f.Name, Path: f.Name})
+				path := f.Src
+				if path == "" {
+					path = f.Name
+				}
+				binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
 			}
 		}
 		if len(binaries) > 0 {
-			installSpec.Asset.Rules = append(installSpec.Asset.Rules, spec.AssetRule{
-				Binaries: binaries,
-			})
+			installSpec.Asset.Binaries = binaries
 		}
 		// TODO: Map overrides, format_overrides, and other fields as needed
 

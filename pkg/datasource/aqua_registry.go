@@ -54,6 +54,10 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		return nil, err
 	}
 	installSpec.Asset.Template = converted
+	if !strings.HasSuffix(converted, "${EXT}") {
+		installSpec.Asset.Template += "${EXT}"
+	}
+	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
 		installSpec.Checksums = &spec.ChecksumConfig{
@@ -67,12 +71,18 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			path := f.Src
 			if path == "" {
 				path = f.Name
+			} else {
+				evaluated, err := ConvertAquaTemplateToInstallSpec(path)
+				if err != nil {
+					return nil, err
+				}
+				path = evaluated
 			}
 			binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
 		}
-		if len(binaries) > 0 {
-			installSpec.Asset.Binaries = binaries
-		}
+	}
+	if len(binaries) > 0 {
+		installSpec.Asset.Binaries = binaries
 	}
 
 	// Convert FormatOverrides to Asset.Rules

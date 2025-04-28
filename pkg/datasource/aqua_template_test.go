@@ -39,6 +39,16 @@ func TestConvertAquaTemplateToInstallSpec(t *testing.T) {
 			input:     "{{unknown .Version}}_{{.OS}}_{{.Arch}}.{{.Format}}",
 			expectErr: true,
 		},
+		{
+			name:     "no extension in template",
+			input:    "{{.Version}}_{{.OS}}_{{.Arch}}",
+			expected: "${TAG}_${OS}_${ARCH}",
+		},
+		{
+			name:     "already ends with .Format",
+			input:    "{{.Version}}_{{.OS}}_{{.Arch}}.{{.Format}}",
+			expected: "${TAG}_${OS}_${ARCH}${EXT}",
+		},
 	}
 
 	for _, tt := range tests {

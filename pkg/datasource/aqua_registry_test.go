@@ -26,6 +26,7 @@ packages:
       type: github_release
       asset: "checksums.txt"
       algorithm: sha256
+    format: tar.gz
 `
 
 func newTestInstallSpec(t *testing.T) *spec.InstallSpec {
@@ -51,6 +52,22 @@ func TestAquaRegistryAdapter_Repo(t *testing.T) {
 	want := "cli/cli"
 	if installSpec.Repo != want {
 		t.Errorf("Repo: got %q, want %q", installSpec.Repo, want)
+	}
+}
+
+func TestAquaRegistryAdapter_AssetTemplate(t *testing.T) {
+	installSpec := newTestInstallSpec(t)
+	want := "gh_${TAG}_${OS}_${ARCH}.tar.gz${EXT}"
+	if installSpec.Asset.Template != want {
+		t.Errorf("Asset.Template: got %q, want %q", installSpec.Asset.Template, want)
+	}
+}
+
+func TestAquaRegistryAdapter_DefaultExtension(t *testing.T) {
+	installSpec := newTestInstallSpec(t)
+	want := ".tar.gz"
+	if installSpec.Asset.DefaultExtension != want {
+		t.Errorf("Asset.DefaultExtension: got %q, want %q", installSpec.Asset.DefaultExtension, want)
 	}
 }
 
@@ -91,3 +108,12 @@ func TestAquaRegistryAdapter_Binaries(t *testing.T) {
 		t.Errorf("Asset.Binaries: got %+v, want [{Name: \"gh\", Path: \"gh\"}]", binaries)
 	}
 }
+
+func TestAquaRegistryAdapter_AssetRules_Empty(t *testing.T) {
+	installSpec := newTestInstallSpec(t)
+	if len(installSpec.Asset.Rules) != 0 {
+		t.Errorf("Asset.Rules: got %+v, want empty", installSpec.Asset.Rules)
+	}
+}
+
+// Additional tests for FormatOverrides and Replacements can be added with custom YAML samples.

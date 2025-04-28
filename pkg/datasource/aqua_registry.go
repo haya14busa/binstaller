@@ -54,13 +54,13 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if p.RepoOwner != "" && p.RepoName != "" {
 		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
 	}
-   converted, err := convertAssetTemplate(p.Asset)
-   if err != nil {
-       return nil, err
-   }
-   installSpec.Asset.Template = converted
-   assetWithoutExt := strings.TrimSuffix(converted, "${EXT}")
-   tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
+	converted, err := convertAssetTemplate(p.Asset)
+	if err != nil {
+		return nil, err
+	}
+	installSpec.Asset.Template = converted
+	assetWithoutExt := strings.TrimSuffix(converted, "${EXT}")
+	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
@@ -99,8 +99,35 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		}
 		rule := spec.AssetRule{
 			When: spec.PlatformCondition{OS: ov.GOOS, Arch: ov.GOArch},
-			Ext:  formatToExtension(ov.Format),
 		}
+
+		// Convert Replacements first.
+		if len(ov.Replacements) == 1 {
+			// Usually len(overrides[].replacement) == 1. If so, use and merge the
+			// same `rule` var.
+			rule = convertReplacementsToRules(ov.Replacements)[0]
+			if rule.When.OS == "" {
+				rule.When.OS = ov.GOOS
+			}
+			if rule.When.Arch == "" {
+				rule.When.Arch = ov.GOArch
+			}
+		} else {
+			// If there are multiple overrides[].replacement, then append multiple
+			// rules from replacement.
+			rules := convertReplacementsToRules(ov.Replacements)
+			for _, ruleRep := range rules {
+				if ruleRep.When.OS == "" {
+					ruleRep.When.OS = ov.GOOS
+				}
+				if ruleRep.When.Arch == "" {
+					ruleRep.When.Arch = ov.GOArch
+				}
+				installSpec.Asset.Rules = append(installSpec.Asset.Rules, ruleRep)
+			}
+		}
+
+		rule.Ext = formatToExtension(ov.Format)
 		if ov.Asset != "" {
 			converted, err := convertAssetTemplate(ov.Asset)
 			if err != nil {
@@ -119,12 +146,6 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 
 		if rule.Arch != "" || len(rule.Binaries) > 0 || rule.Ext != "" || rule.OS != "" || rule.Template != "" {
 			installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
-		}
-
-		// Convert Replacements to Asset.Rules
-		rules := convertReplacementsToRules(ov.Replacements)
-		if len(rules) > 0 {
-			installSpec.Asset.Rules = append(installSpec.Asset.Rules, rules...)
 		}
 
 	}

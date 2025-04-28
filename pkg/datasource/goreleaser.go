@@ -251,29 +251,6 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 	return s, nil
 }
 
-// formatToExtension converts a goreleaser archive format to a file extension.
-func formatToExtension(format string) string {
-	switch format {
-	case "tar.gz":
-		return ".tar.gz"
-	case "tgz":
-		return ".tgz" // Alias for tar.gz
-	case "tar.xz":
-		return ".tar.xz"
-	case "tar":
-		return ".tar"
-	case "zip":
-		return ".zip"
-	case "gz":
-		return ".gz" // Less common for archives, but possible
-	case "binary":
-		return "" // No extension for binary format
-	default:
-		log.Warnf("unknown goreleaser archive format '%s', assuming no extension", format)
-		return ""
-	}
-}
-
 // deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.
 func deriveSupportedPlatforms(builds []config.Build) []spec.Platform {
 	platforms := make(map[string]spec.Platform) // Use map to deduplicate

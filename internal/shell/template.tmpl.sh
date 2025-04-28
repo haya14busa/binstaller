@@ -87,6 +87,10 @@ resolve_asset_filename() {
     {{- if .Arch }} ARCH='{{ .Arch }}' {{- end }}
     {{- if .Ext }} EXT='{{ .Ext }}' {{- end }}
     {{- if .Template }} ASSET_FILENAME="{{ .Template }}" {{- end }}
+    {{- range $i, $binary := .Binaries }}
+    BINARY_NAME_{{ $i }}={{ $binary.Name }}
+    BINARY_PATH_{{ $i }}={{ $binary.Path }}
+    {{- end }}
   fi
   {{- end }}
   {{- end }}
@@ -131,7 +135,7 @@ execute() {
     (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
   fi
 
-  {{- range $binary := .Asset.Binaries }}
+  {{- range $i, $binary := .Asset.Binaries }}
   BINARY_NAME='{{ $binary.Name }}'
   if [ "${UNAME_OS}" = "windows" ]; then
     case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
@@ -145,6 +149,15 @@ execute() {
       case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
     fi
   fi
+
+  {{- if (hasBinaryOverride $.Asset) }}
+  if [ -n "$BINARY_NAME_{{ $i }}" ]; then
+    BINARY_NAME="$BINARY_NAME_{{ $i }}"
+  fi
+  if [ -n "$BINARY_PATH_{{ $i }}" ]; then
+    BINARY_NAME="$BINARY_PATH_{{ $i }}"
+  fi
+  {{- end }}
 
   # Install the binary
   INSTALL_PATH="${BINDIR}/${BINARY_NAME}"

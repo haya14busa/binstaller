@@ -64,10 +64,11 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if strings.HasSuffix(assetWithoutExt, "${EXT}") {
 		assetWithoutExt = strings.TrimSuffix(assetWithoutExt, "${EXT}")
 	}
+	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
-		convertedChecksum, err := ConvertAquaTemplateToInstallSpec(p.Checksum.Asset, map[string]string{"AssetWithoutExt": assetWithoutExt})
+		convertedChecksum, err := ConvertAquaTemplateToInstallSpec(p.Checksum.Asset, tmplVars)
 		if err != nil {
 			return nil, err
 		}
@@ -76,21 +77,9 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			Algorithm: p.Checksum.Algorithm,
 		}
 	}
-	binaries := make([]spec.Binary, 0, len(p.Files))
-	for _, f := range p.Files {
-		if f.Name != "" {
-			path := f.Src
-			if path == "" {
-				path = f.Name
-			} else {
-				evaluated, err := ConvertAquaTemplateToInstallSpec(path, map[string]string{"AssetWithoutExt": assetWithoutExt})
-				if err != nil {
-					return nil, err
-				}
-				path = evaluated
-			}
-			binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
-		}
+	binaries, err := convertFilesToBinaries(p.Files, tmplVars)
+	if err != nil {
+		return nil, err
 	}
 	if len(binaries) > 0 {
 		installSpec.Asset.Binaries = binaries
@@ -123,10 +112,39 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			}
 			rule.Template = converted
 		}
-		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
+
+		binaries, err := convertFilesToBinaries(ov.Files, tmplVars)
+		if err != nil {
+			return nil, err
+		}
+		if len(binaries) > 0 {
+			rule.Binaries = binaries
+		}
+
+		if rule.Arch != "" || len(rule.Binaries) > 0 || rule.Ext != "" || rule.OS != "" || rule.Template != "" {
+			installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
+		}
+
+		// Convert Replacements to Asset.Rules
+		rules := convertReplacementsToRules(ov.Replacements)
+		if len(rules) > 0 {
+			installSpec.Asset.Rules = append(installSpec.Asset.Rules, rules...)
+		}
+
 	}
+
 	// Convert Replacements to Asset.Rules
-	for k, v := range p.Replacements {
+	rules := convertReplacementsToRules(p.Replacements)
+	if len(rules) > 0 {
+		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rules...)
+	}
+
+	return installSpec, nil
+}
+
+func convertReplacementsToRules(r registry.Replacements) []spec.AssetRule {
+	rules := make([]spec.AssetRule, 0)
+	for k, v := range r {
 		rule := spec.AssetRule{}
 		if isOS(k) {
 			rule.When.OS = k
@@ -135,10 +153,29 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			rule.When.Arch = k
 			rule.Arch = v
 		}
-		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
+		rules = append(rules, rule)
 	}
+	return rules
+}
 
-	return installSpec, nil
+func convertFilesToBinaries(files []*registry.File, tmplVars map[string]string) ([]spec.Binary, error) {
+	binaries := make([]spec.Binary, 0, len(files))
+	for _, f := range files {
+		if f.Name != "" {
+			path := f.Src
+			if path == "" {
+				path = f.Name
+			} else {
+				evaluated, err := ConvertAquaTemplateToInstallSpec(path, tmplVars)
+				if err != nil {
+					return nil, err
+				}
+				path = evaluated
+			}
+			binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
+		}
+	}
+	return binaries, nil
 }
 
 // isOS returns true if the string is a known GOOS value (target OS for Go builds).

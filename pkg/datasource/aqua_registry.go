@@ -54,6 +54,11 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if p.RepoOwner != "" && p.RepoName != "" {
 		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
 	}
+	if checkTitleCase(&p) {
+		installSpec.Asset.NamingConvention = &spec.NamingConvention{
+			OS: "titlecase",
+		}
+	}
 	converted, err := convertAssetTemplate(p.Asset)
 	if err != nil {
 		return nil, err
@@ -248,7 +253,7 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 			continue
 		}
 
-		// Main package: only if VersionConstraints is empty or "true"
+		// Main package: only if VersionConstraints is empty or evaluated to "true"
 		if isVersionConstraintSatisfiedForLatest(pkg.VersionConstraints) {
 			spec, err := mapToInstallSpec(*pkg)
 			if err != nil {
@@ -331,4 +336,8 @@ func hasExtensions(s string) bool {
 		}
 	}
 	return false
+}
+
+func checkTitleCase(p *registry.PackageInfo) bool {
+	return strings.Contains(p.Asset, "title .OS")
 }

@@ -27,6 +27,7 @@ func ConvertAquaTemplateToInstallSpec(tmpl string, extraVars map[string]string) 
 	// Define a function map that ignores any function and just returns the variable placeholder
 	funcMap := template.FuncMap{
 		"trimV": func(s string) string { return "${VERSION}" },
+		"title": func(s string) string { return s },
 	}
 
 	// Use a custom template to replace variables with placeholders

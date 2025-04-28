@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aquaproj/aqua/v2/pkg/config/registry"
+	aquaexpr "github.com/aquaproj/aqua/v2/pkg/expr"
 	"github.com/haya14busa/goinstaller/pkg/spec"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -33,9 +34,10 @@ func NewAquaRegistryAdapterFromRepo(repo string, ref string) SourceAdapter {
 	return &AquaRegistryAdapter{repo: repo, ref: ref}
 }
 
-// hasTrueConstraint returns true if the constraint is "" or "true".
-func hasTrueConstraint(constraint string) bool {
-	return constraint == "" || constraint == "true"
+// isVersionConstraintSatisfiedForLatest uses EvaluateVersionConstraints to check if the version constraints allow "latest" (simulated by v99999999.0.0).
+func isVersionConstraintSatisfiedForLatest(constraint string) bool {
+	ok, err := aquaexpr.EvaluateVersionConstraints(constraint, "v99999999.0.0", "v99999999.0.0")
+	return err == nil && ok
 }
 
 // mapToInstallSpec maps a registry.PackageInfo to a *spec.InstallSpec.
@@ -53,11 +55,12 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if err != nil {
 		return nil, err
 	}
-	installSpec.Asset.Template = converted
 	if !strings.HasSuffix(converted, "${EXT}") {
-		installSpec.Asset.Template += "${EXT}"
+		converted += "${EXT}"
 	}
+	installSpec.Asset.Template = converted
 	assetWithoutExt := converted
+	// Trim "${EXT}" from the end
 	if strings.HasSuffix(assetWithoutExt, "${EXT}") {
 		assetWithoutExt = strings.TrimSuffix(assetWithoutExt, "${EXT}")
 	}
@@ -174,7 +177,7 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 		}
 
 		// Main package: only if VersionConstraints is empty or "true"
-		if hasTrueConstraint(pkg.VersionConstraints) {
+		if isVersionConstraintSatisfiedForLatest(pkg.VersionConstraints) {
 			spec, err := mapToInstallSpec(*pkg)
 			if err != nil {
 				return nil, err
@@ -184,7 +187,7 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 
 		// version_overrides: only those with VersionConstraints "true"
 		for _, vo := range pkg.VersionOverrides {
-			if hasTrueConstraint(vo.VersionConstraints) {
+			if isVersionConstraintSatisfiedForLatest(vo.VersionConstraints) {
 				// Map override fields onto a copy of pkg, then map to InstallSpec
 				override := mergeVersionOverride(*pkg, *vo)
 				spec, err := mapToInstallSpec(override)

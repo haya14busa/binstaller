@@ -369,17 +369,15 @@ execute() {
     (cd "${TMPDIR}" && untar "${ASSET_FILENAME}" "${STRIP_COMPONENTS}")
   fi
   BINARY_NAME='slsa-verifier'
-  if [ "${UNAME_OS}" = "windows" ]; then
-    case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
-  fi
-
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
     BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
   else
     BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
-    if [ "${UNAME_OS}" = "windows" ]; then
-      case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
-    fi
+  fi
+
+  if [ "${UNAME_OS}" = "windows" ]; then
+    case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
+    case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
   fi
 
   # Install the binary

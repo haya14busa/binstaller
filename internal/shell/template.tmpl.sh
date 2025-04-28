@@ -137,27 +137,24 @@ execute() {
 
   {{- range $i, $binary := .Asset.Binaries }}
   BINARY_NAME='{{ $binary.Name }}'
-  if [ "${UNAME_OS}" = "windows" ]; then
-    case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
-  fi
-
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
     BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
   else
     BINARY_PATH="${TMPDIR}/{{ $binary.Path }}"
-    if [ "${UNAME_OS}" = "windows" ]; then
-      case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
-    fi
   fi
-
   {{- if (hasBinaryOverride $.Asset) }}
   if [ -n "$BINARY_NAME_{{ $i }}" ]; then
     BINARY_NAME="$BINARY_NAME_{{ $i }}"
   fi
   if [ -n "$BINARY_PATH_{{ $i }}" ]; then
-    BINARY_NAME="$BINARY_PATH_{{ $i }}"
+    BINARY_PATH="${TMPDIR}/$BINARY_PATH_{{ $i }}"
   fi
   {{- end }}
+
+  if [ "${UNAME_OS}" = "windows" ]; then
+    case "${BINARY_NAME}" in *.exe) ;; *) BINARY_NAME="${BINARY_NAME}.exe" ;; esac
+    case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
+  fi
 
   # Install the binary
   INSTALL_PATH="${BINDIR}/${BINARY_NAME}"

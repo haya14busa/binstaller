@@ -118,7 +118,7 @@ func TestAquaRegistryAdapter_Repo(t *testing.T) {
 
 func TestAquaRegistryAdapter_AssetTemplate(t *testing.T) {
 	installSpec := newTestInstallSpec(t)
-	want := "gh_${TAG}_${OS}_${ARCH}.tar.gz${EXT}"
+	want := "gh_${TAG}_${OS}_${ARCH}.tar.gz"
 	if installSpec.Asset.Template != want {
 		t.Errorf("Asset.Template: got %q, want %q", installSpec.Asset.Template, want)
 	}

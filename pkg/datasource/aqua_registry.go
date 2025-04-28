@@ -51,12 +51,9 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if p.RepoOwner != "" && p.RepoName != "" {
 		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
 	}
-	converted, err := ConvertAquaTemplateToInstallSpec(p.Asset, nil)
+	converted, err := convertAssetTemplate(p.Asset)
 	if err != nil {
 		return nil, err
-	}
-	if !strings.HasSuffix(converted, "${EXT}") {
-		converted += "${EXT}"
 	}
 	installSpec.Asset.Template = converted
 	assetWithoutExt := converted
@@ -117,12 +114,11 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			Ext:  formatToExtension(ov.Format),
 		}
 		if ov.Asset != "" {
-			converted, err := ConvertAquaTemplateToInstallSpec(ov.Asset, nil)
-			if err == nil {
-				rule.Template = converted
-			} else {
-				rule.Template = ov.Asset
+			converted, err := convertAssetTemplate(ov.Asset)
+			if err != nil {
+				return nil, err
 			}
+			rule.Template = converted
 		}
 		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
 	}
@@ -231,4 +227,51 @@ func convertSupportedEnvs(envs registry.SupportedEnvs) []spec.Platform {
 		}
 	}
 	return platforms
+}
+
+func convertAssetTemplate(tmpl string) (string, error) {
+	s, err := ConvertAquaTemplateToInstallSpec(tmpl, nil)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(s, "${EXT}") && !hasExtensions(s) {
+		s += "${EXT}"
+	}
+	return s, nil
+}
+
+func hasExtensions(s string) bool {
+	var extensions = []string{
+		"tar.br",
+		"tar.bz2",
+		"tar.gz",
+		"tar.lz4",
+		"tar.sz",
+		"tar.xz",
+		"tbr",
+		"tbz",
+		"tbz2",
+		"tgz",
+		"tlz4",
+		"tsz",
+		"txz",
+		"tar.zst",
+		"zip",
+		"gz",
+		"bz2",
+		"lz4",
+		"sz",
+		"xz",
+		"zst",
+		"dmg",
+		"pkg",
+		"rar",
+		"tar",
+	}
+	for _, e := range extensions {
+		if strings.HasSuffix(s, e) {
+			return true
+		}
+	}
+	return false
 }

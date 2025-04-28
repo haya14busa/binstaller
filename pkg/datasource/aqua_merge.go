@@ -28,6 +28,14 @@ func mergeVersionOverride(pkg registry.PackageInfo, vo registry.VersionOverride)
 	if vo.Overrides != nil {
 		merged.Overrides = vo.Overrides
 	}
-	// Only map fields that are safe and present in both structs.
+	// Merge Replacements: vo takes precedence over pkg
+	if vo.Replacements != nil {
+		if merged.Replacements == nil {
+			merged.Replacements = make(map[string]string)
+		}
+		for k, v := range vo.Replacements {
+			merged.Replacements[k] = v
+		}
+	}
 	return merged
 }

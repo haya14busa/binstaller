@@ -25,7 +25,7 @@ func ConvertAquaTemplateToInstallSpec(tmpl string) (string, error) {
 	}
 
 	// Use a custom template to replace variables with placeholders
-	tmplObj, err := template.New("aqua").Funcs(funcMap).Parse(tmpl)
+	tmplObj, err := template.New("aqua").Option("missingkey=error").Funcs(funcMap).Parse(tmpl)
 	if err != nil {
 		return "", err
 	}

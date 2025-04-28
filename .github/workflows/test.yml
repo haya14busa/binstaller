@@ -41,3 +41,7 @@ jobs:
     - name: Test running generated installers
       run: |
         ./test/run_installers.sh
+
+    - name: Test aqua source
+      run: |
+        ./test/aqua_source.sh

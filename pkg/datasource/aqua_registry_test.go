@@ -29,9 +29,38 @@ packages:
     format: tar.gz
 `
 
+const sampleAquaYAMLChecksumTemplate = `
+packages:
+  - name: gh
+    type: github_release
+    repo_owner: cli
+    repo_name: cli
+    asset: "gh_{{.Version}}_{{.OS}}_{{.Arch}}.tar.gz"
+    files:
+      - name: gh
+        src: gh
+    supported_envs:
+      - linux/amd64
+    checksum:
+      type: github_release
+      asset: "{{.Asset}}.sha256"
+      algorithm: sha256
+    format: tar.gz
+`
+
 func newTestInstallSpec(t *testing.T) *spec.InstallSpec {
 	t.Helper()
 	adapter := NewAquaRegistryAdapterFromReader(strings.NewReader(sampleAquaYAML))
+	installSpec, err := adapter.GenerateInstallSpec(context.Background())
+	if err != nil {
+		t.Fatalf("GenerateInstallSpec failed: %v", err)
+	}
+	return installSpec
+}
+
+func newTestInstallSpecChecksumTemplate(t *testing.T) *spec.InstallSpec {
+	t.Helper()
+	adapter := NewAquaRegistryAdapterFromReader(strings.NewReader(sampleAquaYAMLChecksumTemplate))
 	installSpec, err := adapter.GenerateInstallSpec(context.Background())
 	if err != nil {
 		t.Fatalf("GenerateInstallSpec failed: %v", err)
@@ -98,6 +127,14 @@ func TestAquaRegistryAdapter_Checksums(t *testing.T) {
 	}
 	if installSpec.Checksums.Algorithm != "sha256" {
 		t.Errorf("Checksums.Algorithm: got %q, want %q", installSpec.Checksums.Algorithm, "sha256")
+	}
+}
+
+func TestAquaRegistryAdapter_Checksums_TemplateWithAsset(t *testing.T) {
+	installSpec := newTestInstallSpecChecksumTemplate(t)
+	want := "${ASSET_FILENAME}.sha256"
+	if installSpec.Checksums.Template != want {
+		t.Errorf("Checksums.Template: got %q, want %q", installSpec.Checksums.Template, want)
 	}
 }
 

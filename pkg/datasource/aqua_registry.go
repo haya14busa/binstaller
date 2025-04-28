@@ -60,8 +60,12 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
+		convertedChecksum, err := ConvertAquaTemplateToInstallSpec(p.Checksum.Asset)
+		if err != nil {
+			return nil, err
+		}
 		installSpec.Checksums = &spec.ChecksumConfig{
-			Template:  p.Checksum.Asset,
+			Template:  convertedChecksum,
 			Algorithm: p.Checksum.Algorithm,
 		}
 	}

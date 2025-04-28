@@ -16,6 +16,7 @@ func ConvertAquaTemplateToInstallSpec(tmpl string) (string, error) {
 		"OS":      "${OS}",
 		"Arch":    "${ARCH}",
 		"Format":  "${EXT}",
+		"Asset":   "${ASSET_FILENAME}",
 	}
 
 	// Define a function map that ignores any function and just returns the variable placeholder

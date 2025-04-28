@@ -53,16 +53,17 @@ settings from a source like a GoReleaser config file or a GitHub repository.`,
 			return fmt.Errorf("source 'cli' not yet implemented")
 		case "aqua":
 			// Use --file for registry YAML, or stdin if not specified
-			if initSourceFile == "" {
+			switch initSourceFile {
+			case "":
 				// No file: use repo (and optionally commit SHA/ref)
 				if initRepo == "" {
 					return fmt.Errorf("--repo is required for aqua source when --file is not specified")
 				}
 				adapter = datasource.NewAquaRegistryAdapterFromRepo(initRepo, initCommitSHA)
-			} else if initSourceFile == "-" {
+			case "-":
 				// --file=- means stdin
 				adapter = datasource.NewAquaRegistryAdapterFromReader(os.Stdin)
-			} else {
+			default:
 				// --file=path
 				f, err := os.Open(initSourceFile)
 				if err != nil {

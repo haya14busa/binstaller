@@ -54,17 +54,13 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if p.RepoOwner != "" && p.RepoName != "" {
 		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
 	}
-	converted, err := convertAssetTemplate(p.Asset)
-	if err != nil {
-		return nil, err
-	}
-	installSpec.Asset.Template = converted
-	assetWithoutExt := converted
-	// Trim "${EXT}" from the end
-	if strings.HasSuffix(assetWithoutExt, "${EXT}") {
-		assetWithoutExt = strings.TrimSuffix(assetWithoutExt, "${EXT}")
-	}
-	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
+   converted, err := convertAssetTemplate(p.Asset)
+   if err != nil {
+       return nil, err
+   }
+   installSpec.Asset.Template = converted
+   assetWithoutExt := strings.TrimSuffix(converted, "${EXT}")
+   tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {

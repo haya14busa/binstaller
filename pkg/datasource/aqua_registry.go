@@ -49,7 +49,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if p.RepoOwner != "" && p.RepoName != "" {
 		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
 	}
-	converted, err := ConvertAquaTemplateToInstallSpec(p.Asset)
+	converted, err := ConvertAquaTemplateToInstallSpec(p.Asset, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +57,14 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	if !strings.HasSuffix(converted, "${EXT}") {
 		installSpec.Asset.Template += "${EXT}"
 	}
+	assetWithoutExt := converted
+	if strings.HasSuffix(assetWithoutExt, "${EXT}") {
+		assetWithoutExt = strings.TrimSuffix(assetWithoutExt, "${EXT}")
+	}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
-		convertedChecksum, err := ConvertAquaTemplateToInstallSpec(p.Checksum.Asset)
+		convertedChecksum, err := ConvertAquaTemplateToInstallSpec(p.Checksum.Asset, map[string]string{"AssetWithoutExt": assetWithoutExt})
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +80,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			if path == "" {
 				path = f.Name
 			} else {
-				evaluated, err := ConvertAquaTemplateToInstallSpec(path)
+				evaluated, err := ConvertAquaTemplateToInstallSpec(path, map[string]string{"AssetWithoutExt": assetWithoutExt})
 				if err != nil {
 					return nil, err
 				}

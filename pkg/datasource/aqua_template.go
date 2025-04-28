@@ -8,7 +8,8 @@ import (
 
 // ConvertAquaTemplateToInstallSpec evaluates the Aqua asset template as a Go template,
 // replacing variables with InstallSpec placeholders (e.g., .OS → ${OS}, .Version → ${TAG}, .SemVer → ${VERSION}).
-func ConvertAquaTemplateToInstallSpec(tmpl string) (string, error) {
+// Accepts an optional extraVars map for additional template variables (e.g., AssetWithoutExt).
+func ConvertAquaTemplateToInstallSpec(tmpl string, extraVars map[string]string) (string, error) {
 	// Map Aqua template variables to InstallSpec placeholders
 	varMap := map[string]string{
 		"SemVer":  "${VERSION}",
@@ -17,6 +18,10 @@ func ConvertAquaTemplateToInstallSpec(tmpl string) (string, error) {
 		"Arch":    "${ARCH}",
 		"Format":  "${EXT}",
 		"Asset":   "${ASSET_FILENAME}",
+	}
+	// Merge extraVars
+	for k, v := range extraVars {
+		varMap[k] = v
 	}
 
 	// Define a function map that ignores any function and just returns the variable placeholder

@@ -53,7 +53,7 @@ func TestConvertAquaTemplateToInstallSpec(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertAquaTemplateToInstallSpec(tt.input)
+			got, err := ConvertAquaTemplateToInstallSpec(tt.input, nil)
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("expected error for input %q, got nil", tt.input)

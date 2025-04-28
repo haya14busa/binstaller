@@ -33,6 +33,47 @@ func NewAquaRegistryAdapterFromRepo(repo string, ref string) SourceAdapter {
 	return &AquaRegistryAdapter{repo: repo, ref: ref}
 }
 
+// hasTrueConstraint returns true if the constraint is "" or "true".
+func hasTrueConstraint(constraint string) bool {
+	return constraint == "" || constraint == "true"
+}
+
+// mapToInstallSpec maps a registry.PackageInfo to a *spec.InstallSpec.
+func mapToInstallSpec(p registry.PackageInfo) *spec.InstallSpec {
+	installSpec := &spec.InstallSpec{}
+	if p.Name != "" {
+		installSpec.Name = p.Name
+	} else if len(p.Files) > 0 && p.Files[0].Name != "" {
+		installSpec.Name = p.Files[0].Name
+	}
+	if p.RepoOwner != "" && p.RepoName != "" {
+		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
+	}
+	// TODO: Convert Aqua asset template to InstallSpec format (e.g., "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}")
+	installSpec.Asset.Template = p.Asset
+	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
+	if p.Checksum != nil {
+		installSpec.Checksums = &spec.ChecksumConfig{
+			Template:  p.Checksum.Asset,
+			Algorithm: p.Checksum.Algorithm,
+		}
+	}
+	binaries := make([]spec.Binary, 0, len(p.Files))
+	for _, f := range p.Files {
+		if f.Name != "" {
+			path := f.Src
+			if path == "" {
+				path = f.Name
+			}
+			binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
+		}
+	}
+	if len(binaries) > 0 {
+		installSpec.Asset.Binaries = binaries
+	}
+	return installSpec
+}
+
 // GenerateInstallSpecs parses the registry config and returns InstallSpecs for supported packages.
 // GenerateInstallSpec parses the registry config and returns the first InstallSpec for a supported package.
 // TODO: Support returning multiple InstallSpecs if needed.
@@ -68,57 +109,25 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 	}
 
 	// Implement mapping/filtering logic from regConfig.Packages to InstallSpec
+
 	for _, pkg := range regConfig.PackageInfos {
 		if pkg.Type != "github_release" {
 			continue
 		}
 
-		// Map fields to InstallSpec
-		installSpec := &spec.InstallSpec{}
-
-		// Name: pkg.Name or first files.name
-		if pkg.Name != "" {
-			installSpec.Name = pkg.Name
-		} else if len(pkg.Files) > 0 && pkg.Files[0].Name != "" {
-			installSpec.Name = pkg.Files[0].Name
+		// Main package: only if VersionConstraints is empty or "true"
+		if hasTrueConstraint(pkg.VersionConstraints) {
+			return mapToInstallSpec(*pkg), nil
 		}
 
-		// Repo: repo_owner/repo_name
-		if pkg.RepoOwner != "" && pkg.RepoName != "" {
-			installSpec.Repo = pkg.RepoOwner + "/" + pkg.RepoName
-		}
-
-		// Asset.Template
-		// TODO: Convert Aqua asset template to InstallSpec format (e.g., "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}")
-		installSpec.Asset.Template = pkg.Asset
-
-		// SupportedPlatforms
-		installSpec.SupportedPlatforms = convertSupportedEnvs(pkg.SupportedEnvs)
-
-		if pkg.Checksum != nil {
-			installSpec.Checksums = &spec.ChecksumConfig{
-				Template:  pkg.Checksum.Asset,
-				Algorithm: pkg.Checksum.Algorithm,
+		// version_overrides: only those with VersionConstraints "true"
+		for _, vo := range pkg.VersionOverrides {
+			if hasTrueConstraint(vo.VersionConstraints) {
+				// Map override fields onto a copy of pkg, then map to InstallSpec
+				override := mergeVersionOverride(*pkg, *vo)
+				return mapToInstallSpec(override), nil
 			}
 		}
-
-		// AssetRule.Binaries: all files.name
-		binaries := make([]spec.Binary, 0, len(pkg.Files))
-		for _, f := range pkg.Files {
-			if f.Name != "" {
-				path := f.Src
-				if path == "" {
-					path = f.Name
-				}
-				binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
-			}
-		}
-		if len(binaries) > 0 {
-			installSpec.Asset.Binaries = binaries
-		}
-		// TODO: Map overrides, format_overrides, and other fields as needed
-
-		return installSpec, nil // Return the first valid InstallSpec
 	}
 
 	return nil, errors.New("no valid github_release package found in registry")

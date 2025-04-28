@@ -39,7 +39,7 @@ func hasTrueConstraint(constraint string) bool {
 }
 
 // mapToInstallSpec maps a registry.PackageInfo to a *spec.InstallSpec.
-func mapToInstallSpec(p registry.PackageInfo) *spec.InstallSpec {
+func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 	installSpec := &spec.InstallSpec{}
 	if p.Name != "" {
 		installSpec.Name = p.Name
@@ -49,8 +49,11 @@ func mapToInstallSpec(p registry.PackageInfo) *spec.InstallSpec {
 	if p.RepoOwner != "" && p.RepoName != "" {
 		installSpec.Repo = p.RepoOwner + "/" + p.RepoName
 	}
-	// TODO: Convert Aqua asset template to InstallSpec format (e.g., "${NAME}_${VERSION}_${OS}_${ARCH}${EXT}")
-	installSpec.Asset.Template = p.Asset
+	converted, err := ConvertAquaTemplateToInstallSpec(p.Asset)
+	if err != nil {
+		return nil, err
+	}
+	installSpec.Asset.Template = converted
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
 		installSpec.Checksums = &spec.ChecksumConfig{
@@ -71,7 +74,7 @@ func mapToInstallSpec(p registry.PackageInfo) *spec.InstallSpec {
 	if len(binaries) > 0 {
 		installSpec.Asset.Binaries = binaries
 	}
-	return installSpec
+	return installSpec, nil
 }
 
 // GenerateInstallSpecs parses the registry config and returns InstallSpecs for supported packages.
@@ -117,7 +120,11 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 
 		// Main package: only if VersionConstraints is empty or "true"
 		if hasTrueConstraint(pkg.VersionConstraints) {
-			return mapToInstallSpec(*pkg), nil
+			spec, err := mapToInstallSpec(*pkg)
+			if err != nil {
+				return nil, err
+			}
+			return spec, nil
 		}
 
 		// version_overrides: only those with VersionConstraints "true"
@@ -125,7 +132,11 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 			if hasTrueConstraint(vo.VersionConstraints) {
 				// Map override fields onto a copy of pkg, then map to InstallSpec
 				override := mergeVersionOverride(*pkg, *vo)
-				return mapToInstallSpec(override), nil
+				spec, err := mapToInstallSpec(override)
+				if err != nil {
+					return nil, err
+				}
+				return spec, nil
 			}
 		}
 	}

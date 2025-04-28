@@ -36,6 +36,9 @@ func NewAquaRegistryAdapterFromRepo(repo string, ref string) SourceAdapter {
 
 // isVersionConstraintSatisfiedForLatest uses EvaluateVersionConstraints to check if the version constraints allow "latest" (simulated by v99999999.0.0).
 func isVersionConstraintSatisfiedForLatest(constraint string) bool {
+	if constraint == "" {
+		return true
+	}
 	ok, err := aquaexpr.EvaluateVersionConstraints(constraint, "v99999999.0.0", "v99999999.0.0")
 	return err == nil && ok
 }

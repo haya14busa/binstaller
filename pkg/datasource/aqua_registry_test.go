@@ -226,7 +226,7 @@ func TestIsVersionConstraintSatisfiedForLatest(t *testing.T) {
 		constraint string
 		want       bool
 	}{
-		{"", false},
+		{"", true},
 		{"true", true},
 		{"false", false},
 		{`semver(">= 0.4.0")`, true},

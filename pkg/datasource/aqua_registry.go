@@ -107,6 +107,25 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		}
 		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
 	}
+	// Convert Overrides to Asset.Rules
+	for _, ov := range p.Overrides {
+		if ov == nil {
+			continue
+		}
+		rule := spec.AssetRule{
+			When: spec.PlatformCondition{OS: ov.GOOS, Arch: ov.GOArch},
+			Ext:  formatToExtension(ov.Format),
+		}
+		if ov.Asset != "" {
+			converted, err := ConvertAquaTemplateToInstallSpec(ov.Asset, nil)
+			if err == nil {
+				rule.Template = converted
+			} else {
+				rule.Template = ov.Asset
+			}
+		}
+		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
+	}
 	// Convert Replacements to Asset.Rules
 	for k, v := range p.Replacements {
 		rule := spec.AssetRule{}

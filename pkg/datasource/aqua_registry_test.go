@@ -48,6 +48,28 @@ packages:
     format: tar.gz
 `
 
+const sampleAquaYAMLOv = `
+packages:
+  - name: gh
+    type: github_release
+    repo_owner: cli
+    repo_name: cli
+    version_constraint: "true"
+    asset: "gh_{{.Version}}_{{.OS}}_{{.Arch}}.tar.gz"
+    files:
+      - name: gh
+        src: gh
+    supported_envs:
+      - linux/amd64
+      - darwin/arm64
+    overrides:
+      - goos: darwin
+        goarch: arm64
+        asset: "gh_{{.Version}}_darwin_arm64.zip"
+        format: zip
+    format: tar.gz
+`
+
 func newTestInstallSpec(t *testing.T) *spec.InstallSpec {
 	t.Helper()
 	adapter := NewAquaRegistryAdapterFromReader(strings.NewReader(sampleAquaYAML))
@@ -61,6 +83,16 @@ func newTestInstallSpec(t *testing.T) *spec.InstallSpec {
 func newTestInstallSpecChecksumTemplate(t *testing.T) *spec.InstallSpec {
 	t.Helper()
 	adapter := NewAquaRegistryAdapterFromReader(strings.NewReader(sampleAquaYAMLChecksumTemplate))
+	installSpec, err := adapter.GenerateInstallSpec(context.Background())
+	if err != nil {
+		t.Fatalf("GenerateInstallSpec failed: %v", err)
+	}
+	return installSpec
+}
+
+func newTestInstallSpecWithOverrides(t *testing.T) *spec.InstallSpec {
+	t.Helper()
+	adapter := NewAquaRegistryAdapterFromReader(strings.NewReader(sampleAquaYAMLOv))
 	installSpec, err := adapter.GenerateInstallSpec(context.Background())
 	if err != nil {
 		t.Fatalf("GenerateInstallSpec failed: %v", err)
@@ -151,7 +183,20 @@ func TestAquaRegistryAdapter_AssetRules_Empty(t *testing.T) {
 	}
 }
 
-// Additional tests for FormatOverrides and Replacements can be added with custom YAML samples.
+func TestAquaRegistryAdapter_Overrides(t *testing.T) {
+	installSpec := newTestInstallSpecWithOverrides(t)
+	found := false
+	for _, rule := range installSpec.Asset.Rules {
+		if rule.When.OS == "darwin" && rule.When.Arch == "arm64" &&
+			rule.Ext == ".zip" && rule.Template == "gh_${TAG}_darwin_arm64.zip" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Overrides: expected rule for darwin/arm64 with .zip and correct template, got %+v", installSpec.Asset.Rules)
+	}
+}
 
 func newTestInstallSpecWithAssetWithoutExt(t *testing.T) *spec.InstallSpec {
 	t.Helper()

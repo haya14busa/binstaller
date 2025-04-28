@@ -70,16 +70,53 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			}
 			binaries = append(binaries, spec.Binary{Name: f.Name, Path: path})
 		}
+		if len(binaries) > 0 {
+			installSpec.Asset.Binaries = binaries
+		}
 	}
-	if len(binaries) > 0 {
-		installSpec.Asset.Binaries = binaries
+
+	// Convert FormatOverrides to Asset.Rules
+	for _, fo := range p.FormatOverrides {
+		if fo == nil {
+			continue
+		}
+		rule := spec.AssetRule{
+			When: spec.PlatformCondition{OS: fo.GOOS},
+			Ext:  formatToExtension(fo.Format),
+		}
+		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
 	}
+	// Convert Replacements to Asset.Rules
+	for k, v := range p.Replacements {
+		rule := spec.AssetRule{}
+		if isOS(k) {
+			rule.When.OS = k
+			rule.OS = v
+		} else {
+			rule.When.Arch = k
+			rule.Arch = v
+		}
+		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
+	}
+
 	return installSpec, nil
 }
 
-// GenerateInstallSpecs parses the registry config and returns InstallSpecs for supported packages.
-// GenerateInstallSpec parses the registry config and returns the first InstallSpec for a supported package.
-// TODO: Support returning multiple InstallSpecs if needed.
+// isOS returns true if the string is a known GOOS value (target OS for Go builds).
+// List generated from: go tool dist list -json | jq -r '.[].GOOS' | sort -u (as of 2025-04-28)
+// aix, android, darwin, dragonfly, freebsd, illumos, ios, js, linux, netbsd, openbsd, plan9, solaris, wasip1, windows
+func isOS(s string) bool {
+	switch s {
+	case "aix", "android", "darwin", "dragonfly", "freebsd", "illumos", "ios", "js", "linux", "netbsd", "openbsd", "plan9", "solaris", "wasip1", "windows":
+		return true
+	}
+	return false
+}
+
+// GenerateInstallSpec parses the Aqua registry config and returns the first valid InstallSpec for a supported package.
+// Currently, only packages of type "github_release" are supported.
+// If version overrides are present, the first valid override is returned.
+// Returns an error if no valid package is found or if template conversion fails.
 func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.InstallSpec, error) {
 	var r io.Reader
 	if a.reader != nil {

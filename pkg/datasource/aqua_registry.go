@@ -278,7 +278,7 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 
 		// version_overrides: only those with VersionConstraints "true"
 		for _, vo := range pkg.VersionOverrides {
-			if isVersionConstraintSatisfiedForLatest(vo.VersionConstraints) {
+			if isVersionConstraintSatisfiedForLatest(vo.VersionConstraints) && (vo.Type == "" || vo.Type == "github_release") {
 				// Map override fields onto a copy of pkg, then map to InstallSpec
 				override := mergeVersionOverride(*pkg, *vo)
 				spec, err := mapToInstallSpec(override)

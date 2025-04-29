@@ -234,6 +234,7 @@ untar() {
   case "${tarball}" in
   *.tar.gz | *.tgz) tar --no-same-owner -xzf "${tarball}" --strip-components "${strip_components}" ;;
   *.tar.xz) tar --no-same-owner -xJf "${tarball}" --strip-components "${strip_components}" ;;
+  *.tar.bz2) tar --no-same-owner -xjf "${tarball}" --strip-components "${strip_components}" ;;
   *.tar) tar --no-same-owner -xf "${tarball}" --strip-components "${strip_components}" ;;
   *.zip)
     # unzip doesn't have a standard --strip-components
@@ -347,10 +348,6 @@ resolve_asset_filename() {
   
   # --- Apply Rules ---
   ASSET_FILENAME=""
-  if [ "${UNAME_ARCH}" = 'arm64' ] && true
-  then
-    ARCH='aarch64'
-  fi
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then
     OS='apple-darwin'
@@ -366,6 +363,10 @@ resolve_asset_filename() {
   if [ "${UNAME_ARCH}" = 'amd64' ] && true
   then
     ARCH='x86_64'
+  fi
+  if [ "${UNAME_ARCH}" = 'arm64' ] && true
+  then
+    ARCH='aarch64'
   fi
   if [ -z "${ASSET_FILENAME}" ]; then
     ASSET_FILENAME="cargo-deny-${TAG}-${ARCH}-${OS}${EXT}"

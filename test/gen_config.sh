@@ -14,3 +14,5 @@ set -e
 ./binst init --source aqua --repo EmbarkStudios/cargo-deny --output=testdata/cargo-deny.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 # Checksum file contains `*<file name>` (binary mode. e.g. sha256sum -b)
 ./binst init --source aqua --repo int128/kauthproxy --output=testdata/kauthproxy.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
+# Test .tar.bz2
+./binst init --source aqua --repo xo/xo --output=testdata/xo.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'

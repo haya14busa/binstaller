@@ -12,5 +12,5 @@ hash_md5() {
 }
 
 hash_verify() {
-  hash_verify_internal $1 $2 hash_md5
+  hash_verify_internal "$1" "$2" hash_md5
 }

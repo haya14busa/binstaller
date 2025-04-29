@@ -224,7 +224,7 @@ hash_sha256() {
 }
 
 hash_verify() {
-  hash_verify_internal $1 $2 hash_sha256
+  hash_verify_internal "$1" "$2" hash_sha256
 }
 
 

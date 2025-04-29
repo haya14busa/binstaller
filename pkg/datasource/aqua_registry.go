@@ -64,7 +64,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		return nil, err
 	}
 	installSpec.Asset.Template = assetTmpl
-	assetWithoutExt := strings.TrimSuffix(assetTmpl, "${EXT}")
+	assetWithoutExt := strings.TrimSuffix(trimExtension(assetTmpl), "${EXT}")
 	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	if installSpec.Asset.DefaultExtension == "" && hasExtensions(assetTmpl) {

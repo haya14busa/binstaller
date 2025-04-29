@@ -69,3 +69,13 @@ func extractExtension(s string) string {
 	}
 	return ""
 }
+
+func trimExtension(s string) string {
+	for _, e := range extensions {
+		ext := "." + e
+		if strings.HasSuffix(s, ext) {
+			return strings.TrimSuffix(s, ext)
+		}
+	}
+	return ""
+}

@@ -343,8 +343,8 @@ tag_to_version() {
 
 
 is_rosetta2_available() {
-  [[ $(uname -s) != "Darwin" ]] && return 1
-  [[ $(uname -m)  != "arm64"  ]] && return 1
+  [ "$(uname -s)" = Darwin ]  || return 1
+  [ "$(uname -m)" = arm64 ]   || return 1
   arch -arch x86_64 true 2>/dev/null
 }
 
@@ -433,6 +433,7 @@ OS="${BINSTALLER_OS:-$(uname_os)}"
 UNAME_OS="${OS}"
 
 if is_rosetta2_available; then
+  log_info 'Apple Silicon with Rosetta 2 found: using amd64 as ARCH'
 	ARCH="${BINSTALLER_ARCH:-amd64}"
 else
 	ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"

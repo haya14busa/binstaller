@@ -1,6 +1,10 @@
 package datasource
 
-import "github.com/apex/log"
+import (
+	"strings"
+
+	"github.com/apex/log"
+)
 
 // formatToExtension converts a goreleaser archive format to a file extension.
 func formatToExtension(format string) string {
@@ -20,7 +24,7 @@ func formatToExtension(format string) string {
 	case "binary", "raw", "":
 		return "" // No extension for binary format
 	default:
-		log.Warnf("unknown archive format '%s', assuming no extension", format)
-		return ""
+		log.Warnf("unknown archive format '%s'", format)
+		return "." + strings.TrimLeft(format, ".")
 	}
 }

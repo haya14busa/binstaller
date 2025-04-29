@@ -9,6 +9,9 @@ asset:
           path: micro-${VERSION}/micro
     rules:
         - when:
+            os: windows
+          os: win64
+        - when:
             os: linux
             arch: amd64
           template: micro-${VERSION}-${OS}64-static${EXT}
@@ -28,6 +31,3 @@ asset:
         - when:
             os: windows
           ext: .zip
-        - when:
-            os: windows
-          os: win64

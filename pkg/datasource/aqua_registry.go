@@ -78,13 +78,6 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			Algorithm: p.Checksum.Algorithm,
 		}
 	}
-	binaries, err := convertFilesToBinaries(p.Files, tmplVars)
-	if err != nil {
-		return nil, err
-	}
-	if len(binaries) > 0 {
-		installSpec.Asset.Binaries = binaries
-	}
 
 	// Convert FormatOverrides to Asset.Rules
 	for _, fo := range p.FormatOverrides {
@@ -97,6 +90,16 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		}
 		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rule)
 	}
+
+	// Convert Replacements to Asset.Rules
+	// This should be before processing overrides since replacement often
+	// contains OS/ARCH replacements which should be replaced before overriding
+	// templates.
+	rules := convertReplacementsToRules(p.Replacements)
+	if len(rules) > 0 {
+		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rules...)
+	}
+
 	// Convert Overrides to Asset.Rules
 	for _, ov := range p.Overrides {
 		if ov == nil {
@@ -155,10 +158,12 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 
 	}
 
-	// Convert Replacements to Asset.Rules
-	rules := convertReplacementsToRules(p.Replacements)
-	if len(rules) > 0 {
-		installSpec.Asset.Rules = append(installSpec.Asset.Rules, rules...)
+	binaries, err := convertFilesToBinaries(p.Files, tmplVars)
+	if err != nil {
+		return nil, err
+	}
+	if len(binaries) > 0 {
+		installSpec.Asset.Binaries = binaries
 	}
 
 	return installSpec, nil

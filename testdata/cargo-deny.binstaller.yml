@@ -9,9 +9,6 @@ asset:
           path: cargo-deny-${TAG}-${ARCH}-${OS}/cargo-deny
     rules:
         - when:
-            arch: amd64
-          arch: x86_64
-        - when:
             arch: arm64
           arch: aarch64
         - when:
@@ -23,6 +20,9 @@ asset:
         - when:
             os: windows
           os: pc-windows-msvc
+        - when:
+            arch: amd64
+          arch: x86_64
 checksums:
     template: ${ASSET_FILENAME}.sha256
     algorithm: sha256

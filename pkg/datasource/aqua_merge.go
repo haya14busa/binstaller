@@ -37,5 +37,8 @@ func mergeVersionOverride(pkg registry.PackageInfo, vo registry.VersionOverride)
 			merged.Replacements[k] = v
 		}
 	}
+	if vo.Rosetta2 != nil {
+		merged.Rosetta2 = *vo.Rosetta2
+	}
 	return merged
 }

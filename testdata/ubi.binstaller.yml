@@ -6,9 +6,6 @@ asset:
     default_extension: .tar.gz
     rules:
         - when:
-            os: linux
-          os: Linux
-        - when:
             os: windows
           os: Windows
         - when:
@@ -17,6 +14,9 @@ asset:
         - when:
             os: darwin
           os: macOS
+        - when:
+            os: linux
+          os: Linux
         - when:
             os: darwin
           template: ubi-${OS}-${ARCH}${EXT}

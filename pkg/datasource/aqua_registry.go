@@ -79,6 +79,12 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		}
 	}
 
+	if p.Rosetta2 {
+		installSpec.Asset.ArchEmulation = &spec.ArchEmulation{
+			Rosetta2: true,
+		}
+	}
+
 	// Convert FormatOverrides to Asset.Rules
 	for _, fo := range p.FormatOverrides {
 		if fo == nil {

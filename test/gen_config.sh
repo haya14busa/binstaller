@@ -4,5 +4,6 @@ set -e
 ./binst init --source goreleaser --repo actionutils/sigspy -o=testdata/sigspy.binstaller.yml --sha='3e1c6f32072cd4b8309d00bd31f498903f71c422'
 ./binst init --source aqua --repo zyedidia/micro --output=testdata/micro.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 ./binst init --source aqua --repo houseabsolute/ubi --output=testdata/ubi.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
-
+# Test rosetta2
+./binst init --source aqua --repo ducaale/xh --output=testdata/xh.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 

@@ -330,6 +330,7 @@ capitalize() {
   printf "%s%s\n" "$first_upper" "$(printf "%s" "$input" | cut -c2-)"
 }
 
+
 resolve_asset_filename() {
   OS="$(capitalize "${OS}")"
   # --- Apply Rules ---
@@ -420,8 +421,9 @@ parse_args "$@"
 
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
-ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_OS="${OS}"
+
+ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_ARCH="${ARCH}"
 log_info "Detected Platform: ${OS}/${ARCH}"
 

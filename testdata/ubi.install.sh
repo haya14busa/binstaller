@@ -324,14 +324,11 @@ tag_to_version() {
 }
 
 
+
 resolve_asset_filename() {
   
   # --- Apply Rules ---
   ASSET_FILENAME=""
-  if [ "${UNAME_OS}" = 'linux' ] && true
-  then
-    OS='Linux'
-  fi
   if [ "${UNAME_OS}" = 'windows' ] && true
   then
     OS='Windows'
@@ -343,6 +340,10 @@ resolve_asset_filename() {
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then
     OS='macOS'
+  fi
+  if [ "${UNAME_OS}" = 'linux' ] && true
+  then
+    OS='Linux'
   fi
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then
@@ -426,8 +427,9 @@ parse_args "$@"
 
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
-ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_OS="${OS}"
+
+ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_ARCH="${ARCH}"
 log_info "Detected Platform: ${OS}/${ARCH}"
 

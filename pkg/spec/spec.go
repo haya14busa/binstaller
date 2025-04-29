@@ -37,6 +37,7 @@ type AssetConfig struct {
 	Binaries         []Binary          `yaml:"binaries,omitempty"` // binary name and path
 	Rules            []AssetRule       `yaml:"rules,omitempty"`
 	NamingConvention *NamingConvention `yaml:"naming_convention,omitempty"`
+	ArchEmulation    *ArchEmulation    `yaml:"arch_emulation,omitempty"`
 }
 
 // AssetRule defines overrides for specific platforms.
@@ -66,6 +67,11 @@ type PlatformCondition struct {
 type NamingConvention struct {
 	OS   string `yaml:"os,omitempty"`   // "lowercase" | "titlecase", Default: "lowercase"
 	Arch string `yaml:"arch,omitempty"` // "lowercase", Default: "lowercase"
+}
+
+// ArchEmulation controls options of arch emulation.
+type ArchEmulation struct {
+	Rosetta2 bool `yaml:"rosetta2,omitempty"` // If true, use amd64 as ARCH instead of arm64 if Rosetta2 is available
 }
 
 // ChecksumConfig defines how to verify checksums.

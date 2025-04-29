@@ -68,6 +68,13 @@ capitalize() {
   printf "%s%s\n" "$first_upper" "$(printf "%s" "$input" | cut -c2-)"
 }
 {{- end }}
+{{ if and .Asset.ArchEmulation .Asset.ArchEmulation.Rosetta2 }}
+is_rosetta2_available() {
+  [[ $(uname -s) != "Darwin" ]] && return 1
+  [[ $(uname -m)  != "arm64"  ]] && return 1
+  arch -arch x86_64 true 2>/dev/null
+}
+{{- end }}
 
 resolve_asset_filename() {
   {{ if eq .Asset.NamingConvention.OS "titlecase" -}}
@@ -179,8 +186,16 @@ parse_args "$@"
 
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
-ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_OS="${OS}"
+{{ if and .Asset.ArchEmulation .Asset.ArchEmulation.Rosetta2 }}
+if is_rosetta2_available; then
+	ARCH="${BINSTALLER_ARCH:-amd64}"
+else
+	ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
+fi
+{{ else }}
+ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
+{{- end }}
 {{ with .Asset.Rules }}
 {{- range . }}
 {{- if .When.Arch -}} UNAME_ARCH="${ARCH}" {{- break }}{{ end }}

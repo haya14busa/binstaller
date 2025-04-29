@@ -324,6 +324,7 @@ tag_to_version() {
 }
 
 
+
 resolve_asset_filename() {
   
   # --- Apply Rules ---
@@ -406,8 +407,9 @@ parse_args "$@"
 
 # --- Determine target platform ---
 OS="${BINSTALLER_OS:-$(uname_os)}"
-ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 UNAME_OS="${OS}"
+
+ARCH="${BINSTALLER_ARCH:-$(uname_arch)}"
 
 log_info "Detected Platform: ${OS}/${ARCH}"
 

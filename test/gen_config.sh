@@ -6,4 +6,6 @@ set -e
 ./binst init --source aqua --repo houseabsolute/ubi --output=testdata/ubi.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 # Test rosetta2
 ./binst init --source aqua --repo ducaale/xh --output=testdata/xh.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
+# Test empty extension (extension hard coded in template)
+./binst init --source aqua --repo Lallassu/gorss --output=testdata/gorss.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 

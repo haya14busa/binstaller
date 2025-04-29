@@ -1,5 +1,4 @@
 schema: v1
-name: ""
 repo: houseabsolute/ubi
 asset:
     template: ubi-${OS}-musl-${ARCH}${EXT}

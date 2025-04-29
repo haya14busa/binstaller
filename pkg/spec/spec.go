@@ -5,7 +5,7 @@ import "strings"
 // InstallSpec defines the v1 configuration schema for binstaller.
 type InstallSpec struct {
 	Schema             string             `yaml:"schema,omitempty"`          // Default: "v1"
-	Name               string             `yaml:"name"`                      // Binary name
+	Name               string             `yaml:"name,omitempty"`            // Optiona. Binary name
 	Repo               string             `yaml:"repo"`                      // GitHub owner/repo (e.g., "owner/repo")
 	DefaultVersion     string             `yaml:"default_version,omitempty"` // Default: "latest"
 	Variant            *VariantConfig     `yaml:"variant,omitempty"`

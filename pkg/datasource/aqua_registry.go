@@ -59,14 +59,17 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			OS: "titlecase",
 		}
 	}
-	converted, err := convertAssetTemplate(p.Asset)
+	assetTmpl, err := convertAssetTemplate(p.Asset)
 	if err != nil {
 		return nil, err
 	}
-	installSpec.Asset.Template = converted
-	assetWithoutExt := strings.TrimSuffix(converted, "${EXT}")
+	installSpec.Asset.Template = assetTmpl
+	assetWithoutExt := strings.TrimSuffix(assetTmpl, "${EXT}")
 	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
+	if installSpec.Asset.DefaultExtension == "" && hasExtensions(assetTmpl) {
+		installSpec.Asset.DefaultExtension = extractExtension(assetTmpl)
+	}
 	installSpec.SupportedPlatforms = convertSupportedEnvs(p.SupportedEnvs)
 	if p.Checksum != nil {
 		convertedChecksum, err := ConvertAquaTemplateToInstallSpec(p.Checksum.Asset, tmplVars)
@@ -143,11 +146,11 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 
 		rule.Ext = formatToExtension(ov.Format)
 		if ov.Asset != "" {
-			converted, err := convertAssetTemplate(ov.Asset)
+			assetTmpl, err := convertAssetTemplate(ov.Asset)
 			if err != nil {
 				return nil, err
 			}
-			rule.Template = converted
+			rule.Template = assetTmpl
 		}
 
 		binaries, err := convertFilesToBinaries(ov.Files, tmplVars)
@@ -311,42 +314,6 @@ func convertAssetTemplate(tmpl string) (string, error) {
 		s += "${EXT}"
 	}
 	return s, nil
-}
-
-func hasExtensions(s string) bool {
-	var extensions = []string{
-		"tar.br",
-		"tar.bz2",
-		"tar.gz",
-		"tar.lz4",
-		"tar.sz",
-		"tar.xz",
-		"tbr",
-		"tbz",
-		"tbz2",
-		"tgz",
-		"tlz4",
-		"tsz",
-		"txz",
-		"tar.zst",
-		"zip",
-		"gz",
-		"bz2",
-		"lz4",
-		"sz",
-		"xz",
-		"zst",
-		"dmg",
-		"pkg",
-		"rar",
-		"tar",
-	}
-	for _, e := range extensions {
-		if strings.HasSuffix(s, e) {
-			return true
-		}
-	}
-	return false
 }
 
 func checkTitleCase(p *registry.PackageInfo) bool {

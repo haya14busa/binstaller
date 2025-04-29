@@ -8,4 +8,7 @@ set -e
 ./binst init --source aqua --repo ducaale/xh --output=testdata/xh.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 # Test empty extension (extension hard coded in template)
 ./binst init --source aqua --repo Lallassu/gorss --output=testdata/gorss.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
-
+# Checksum file only contains hash (it does not file name).
+./binst init --source aqua --repo EmbarkStudios/cargo-deny --output=testdata/cargo-deny.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
+# Checksum file contains `*<file name>` (binary mode. e.g. sha256sum -b)
+./binst init --source aqua --repo int128/kauthproxy --output=testdata/kauthproxy.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'

@@ -1,0 +1,28 @@
+schema: v1
+name: cargo-deny
+repo: EmbarkStudios/cargo-deny
+asset:
+    template: cargo-deny-${TAG}-${ARCH}-${OS}${EXT}
+    default_extension: .tar.gz
+    binaries:
+        - name: cargo-deny
+          path: cargo-deny-${TAG}-${ARCH}-${OS}/cargo-deny
+    rules:
+        - when:
+            arch: amd64
+          arch: x86_64
+        - when:
+            arch: arm64
+          arch: aarch64
+        - when:
+            os: darwin
+          os: apple-darwin
+        - when:
+            os: linux
+          os: unknown-linux-musl
+        - when:
+            os: windows
+          os: pc-windows-msvc
+checksums:
+    template: ${ASSET_FILENAME}.sha256
+    algorithm: sha256

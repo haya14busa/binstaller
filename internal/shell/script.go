@@ -68,6 +68,8 @@ func hashFunc(installSpec *spec.InstallSpec) string {
 		return hashMD5
 	case "sha256":
 		return hashSHA256
+	case "sha512":
+		return hashSHA512
 	}
 	return hashSHA256
 }

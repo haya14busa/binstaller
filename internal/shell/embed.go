@@ -33,6 +33,9 @@ cat \
 
 // --- Custom functions ---
 
+//go:embed hash_sha512.sh
+var hashSHA512 string
+
 //go:embed hash_sha256.sh
 var hashSHA256 string
 

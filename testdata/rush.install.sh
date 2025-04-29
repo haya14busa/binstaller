@@ -217,18 +217,7 @@ hash_md5() {
 }
 
 hash_verify() {
-  TARGET=$1
-  checksums=$2
-  want=$(extract_hash "${TARGET}" "${checksums}")
-  if [ -z "$want" ]; then
-    log_err "hash_verify unable to find checksum for '${TARGET}' in '${checksums}'"
-    return 1
-  fi
-  got=$(hash_md5 "$TARGET")
-  if [ "$want" != "$got" ]; then
-    log_err "hash_verify checksum for '$TARGET' did not verify ${want} vs $got"
-    return 1
-  fi
+  hash_verify_internal $1 $2 hash_md5
 }
 
 
@@ -277,7 +266,36 @@ extract_hash() {
     return 1
   fi
   BASENAME=${TARGET##*/}
-  grep -E "([[:space:]]|/)${BASENAME}$" "${checksums}" 2>/dev/null | tr '\t' ' ' | cut -d ' ' -f 1
+  grep -E "([[:space:]]|/|\*)${BASENAME}$" "${checksums}" 2>/dev/null | tr '\t' ' ' | cut -d ' ' -f 1
+}
+
+hash_verify_internal() {
+  TARGET_PATH=$1
+  SUMFILE=$2
+  HASH_FUNC=$3
+  if [ -z "${SUMFILE}" ]; then
+    log_err "hash_verify_internal checksum file not specified in arg2"
+    return 1
+  fi
+  if [ -z "${HASH_FUNC}" ]; then
+    log_err "hash_verify_internal hash func not specified in arg3"
+    return 1
+  fi
+  got=$($HASH_FUNC "$TARGET_PATH")
+  if [ -z "${got}" ]; then
+    log_err "failed to calculate hash: ${TARGET_PATH}"
+    return 1
+  fi
+  # 1) “hash-only” line?
+  if grep -i -E "^${got}[[:space:]]*$" "$SUMFILE" >/dev/null 2>&1; then
+    return 0
+  fi
+  # 2) Check hash & file name match
+  want=$(extract_hash "${TARGET_PATH}" "${SUMFILE}")
+  if [ "$want" != "$got" ]; then
+    log_err "hash_verify checksum for '$TARGET_PATH' did not verify ${want} vs ${got}"
+    return 1
+  fi
 }
 
 

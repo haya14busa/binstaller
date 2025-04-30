@@ -77,5 +77,5 @@ func trimExtension(s string) string {
 			return strings.TrimSuffix(s, ext)
 		}
 	}
-	return ""
+	return s
 }

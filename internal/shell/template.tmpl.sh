@@ -163,6 +163,17 @@ execute() {
     case "${BINARY_PATH}" in *.exe) ;; *) BINARY_PATH="${BINARY_PATH}.exe" ;; esac
   fi
 
+  if [ ! -f "${BINARY_PATH}" ]; then
+    log_crit "Binary not found: ${BINARY_PATH}"
+    log_crit "Listing contents of ${TMPDIR} ..."
+    if command -v find >/dev/null 2>&1; then
+      cd "${TMPDIR}" && find .
+    else
+      cd "${TMPDIR}" && ls -R .
+    fi
+    return 1
+  fi
+
   # Install the binary
   INSTALL_PATH="${BINDIR}/${BINARY_NAME}"
   log_info "Installing binary to ${INSTALL_PATH}"

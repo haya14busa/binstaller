@@ -358,9 +358,9 @@ resolve_asset_filename() {
   then
     ARCH='aarch64'
   fi
-  if [ "${UNAME_OS}" = 'windows' ] && true
+  if [ "${UNAME_ARCH}" = 'amd64' ] && true
   then
-    OS='pc-windows-msvc'
+    ARCH='x86_64'
   fi
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then
@@ -370,9 +370,9 @@ resolve_asset_filename() {
   then
     OS='unknown-linux-musl'
   fi
-  if [ "${UNAME_ARCH}" = 'amd64' ] && true
+  if [ "${UNAME_OS}" = 'windows' ] && true
   then
-    ARCH='x86_64'
+    OS='pc-windows-msvc'
   fi
   if [ "${UNAME_OS}" = 'windows' ] && true
   then

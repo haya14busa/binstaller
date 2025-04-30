@@ -12,8 +12,8 @@ asset:
             arch: arm64
           arch: aarch64
         - when:
-            os: windows
-          os: pc-windows-msvc
+            arch: amd64
+          arch: x86_64
         - when:
             os: darwin
           os: apple-darwin
@@ -21,8 +21,8 @@ asset:
             os: linux
           os: unknown-linux-musl
         - when:
-            arch: amd64
-          arch: x86_64
+            os: windows
+          os: pc-windows-msvc
         - when:
             os: windows
           ext: .zip

@@ -26,8 +26,11 @@ asset:
         - when:
             os: darwin
             arch: arm64
-          template: micro-${VERSION}-${OS}-${ARCH}${EXT}
           os: macos
+        - when:
+            os: darwin
+            arch: arm64
+          template: micro-${VERSION}-${OS}-${ARCH}${EXT}
         - when:
             os: windows
           ext: .zip

@@ -367,7 +367,11 @@ resolve_asset_filename() {
   fi
   if [ "${UNAME_OS}" = 'darwin' ] && [ "${UNAME_ARCH}" = 'arm64' ] && true
   then
-    OS='macos' ASSET_FILENAME="micro-${VERSION}-${OS}-${ARCH}${EXT}"
+    OS='macos'
+  fi
+  if [ "${UNAME_OS}" = 'darwin' ] && [ "${UNAME_ARCH}" = 'arm64' ] && true
+  then
+    ASSET_FILENAME="micro-${VERSION}-${OS}-${ARCH}${EXT}"
   fi
   if [ "${UNAME_OS}" = 'windows' ] && true
   then

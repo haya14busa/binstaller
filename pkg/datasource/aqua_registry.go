@@ -1,9 +1,11 @@
 package datasource
 
 import (
+	"cmp"
 	"context"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/aquaproj/aqua/v2/pkg/config/registry"
@@ -120,20 +122,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		// copy tmplVar for overrides
 		tmplVarsOv := map[string]string{"AssetWithoutExt": tmplVars["AssetWithoutExt"]}
 
-		// Convert Replacements first.
-		if len(ov.Replacements) == 1 {
-			// Usually len(overrides[].replacement) == 1. If so, use and merge the
-			// same `rule` var.
-			rule = convertReplacementsToRules(ov.Replacements)[0]
-			if rule.When.OS == "" {
-				rule.When.OS = ov.GOOS
-			}
-			if rule.When.Arch == "" {
-				rule.When.Arch = ov.GOArch
-			}
-		} else {
-			// If there are multiple overrides[].replacement, then append multiple
-			// rules from replacement.
+		if len(ov.Replacements) > 0 {
 			rules := convertReplacementsToRules(ov.Replacements)
 			for _, ruleRep := range rules {
 				if ruleRep.When.OS == "" {
@@ -194,6 +183,12 @@ func convertReplacementsToRules(r registry.Replacements) []spec.AssetRule {
 		}
 		rules = append(rules, rule)
 	}
+	slices.SortStableFunc(rules, func(a, b spec.AssetRule) int {
+		return cmp.Or(
+			cmp.Compare(a.When.OS, b.When.OS),
+			cmp.Compare(b.When.Arch, b.When.Arch),
+		)
+	})
 	return rules
 }
 

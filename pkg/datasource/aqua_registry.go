@@ -64,7 +64,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		return nil, err
 	}
 	installSpec.Asset.Template = assetTmpl
-	assetWithoutExt := strings.TrimSuffix(trimExtension(assetTmpl), "${EXT}")
+	assetWithoutExt := assetWithoutExtension(assetTmpl)
 	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	if installSpec.Asset.DefaultExtension == "" && hasExtensions(assetTmpl) {
@@ -151,6 +151,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 				return nil, err
 			}
 			rule.Template = assetTmpl
+			tmplVars["AssetWithoutExt"] = assetWithoutExtension(assetTmpl)
 		}
 
 		binaries, err := convertFilesToBinaries(ov.Files, tmplVars)
@@ -318,4 +319,8 @@ func convertAssetTemplate(tmpl string) (string, error) {
 
 func checkTitleCase(p *registry.PackageInfo) bool {
 	return strings.Contains(p.Asset, "title .OS")
+}
+
+func assetWithoutExtension(assetTmpl string) string {
+	return strings.TrimSuffix(trimExtension(assetTmpl), "${EXT}")
 }

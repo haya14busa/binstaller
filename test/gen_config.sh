@@ -20,3 +20,5 @@ set -e
 ./binst init --source aqua --repo tree-sitter/tree-sitter --output=testdata/treesitter.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 # Test AssetWithoutExt
 ./binst init --source aqua --repo Byron/dua-cli --output=testdata/dua-cli.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
+# Test AssetWithoutExt (override)
+./binst init --source aqua --repo kubescape/kubescape --output=testdata/kubescape.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'

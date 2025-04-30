@@ -349,10 +349,6 @@ resolve_asset_filename() {
   
   # --- Apply Rules ---
   ASSET_FILENAME=""
-  if [ "${UNAME_OS}" = 'windows' ] && true
-  then
-    OS='pc-windows-msvc'
-  fi
   if [ "${UNAME_ARCH}" = 'amd64' ] && true
   then
     ARCH='x86_64'
@@ -368,6 +364,10 @@ resolve_asset_filename() {
   if [ "${UNAME_OS}" = 'linux' ] && true
   then
     OS='unknown-linux-musl'
+  fi
+  if [ "${UNAME_OS}" = 'windows' ] && true
+  then
+    OS='pc-windows-msvc'
   fi
   if [ -z "${ASSET_FILENAME}" ]; then
     ASSET_FILENAME="cargo-deny-${TAG}-${ARCH}-${OS}${EXT}"

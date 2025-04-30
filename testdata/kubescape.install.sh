@@ -405,7 +405,7 @@ execute() {
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then
     BINARY_PATH="${TMPDIR}/${ASSET_FILENAME}"
   else
-    BINARY_PATH="${TMPDIR}/kubescape-${ARCH}-${OS}-latest"
+    BINARY_PATH="${TMPDIR}/kubescape-${OS}-latest"
   fi
 
   if [ "${UNAME_OS}" = "windows" ]; then

@@ -6,7 +6,7 @@ asset:
     default_extension: .tar.gz
     binaries:
         - name: kubescape
-          path: kubescape-${ARCH}-${OS}-latest
+          path: kubescape-${OS}-latest
     rules:
         - when:
             os: darwin

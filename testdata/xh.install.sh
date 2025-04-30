@@ -354,6 +354,14 @@ resolve_asset_filename() {
   
   # --- Apply Rules ---
   ASSET_FILENAME=""
+  if [ "${UNAME_ARCH}" = 'arm64' ] && true
+  then
+    ARCH='aarch64'
+  fi
+  if [ "${UNAME_OS}" = 'windows' ] && true
+  then
+    OS='pc-windows-msvc'
+  fi
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then
     OS='apple-darwin'
@@ -365,14 +373,6 @@ resolve_asset_filename() {
   if [ "${UNAME_ARCH}" = 'amd64' ] && true
   then
     ARCH='x86_64'
-  fi
-  if [ "${UNAME_ARCH}" = 'arm64' ] && true
-  then
-    ARCH='aarch64'
-  fi
-  if [ "${UNAME_OS}" = 'windows' ] && true
-  then
-    OS='pc-windows-msvc'
   fi
   if [ "${UNAME_OS}" = 'windows' ] && true
   then

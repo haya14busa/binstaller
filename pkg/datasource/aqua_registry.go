@@ -64,8 +64,7 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 		return nil, err
 	}
 	installSpec.Asset.Template = assetTmpl
-	assetWithoutExt := assetWithoutExtension(assetTmpl)
-	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExt}
+	tmplVars := map[string]string{"AssetWithoutExt": assetWithoutExtension(assetTmpl)}
 	installSpec.Asset.DefaultExtension = formatToExtension(p.Format)
 	if installSpec.Asset.DefaultExtension == "" && hasExtensions(assetTmpl) {
 		installSpec.Asset.DefaultExtension = extractExtension(assetTmpl)
@@ -118,6 +117,9 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 			When: spec.PlatformCondition{OS: ov.GOOS, Arch: ov.GOArch},
 		}
 
+		// copy tmplVar for overrides
+		tmplVarsOv := map[string]string{"AssetWithoutExt": tmplVars["AssetWithoutExt"]}
+
 		// Convert Replacements first.
 		if len(ov.Replacements) == 1 {
 			// Usually len(overrides[].replacement) == 1. If so, use and merge the
@@ -151,10 +153,10 @@ func mapToInstallSpec(p registry.PackageInfo) (*spec.InstallSpec, error) {
 				return nil, err
 			}
 			rule.Template = assetTmpl
-			tmplVars["AssetWithoutExt"] = assetWithoutExtension(assetTmpl)
+			tmplVarsOv["AssetWithoutExt"] = assetWithoutExtension(assetTmpl)
 		}
 
-		binaries, err := convertFilesToBinaries(ov.Files, tmplVars)
+		binaries, err := convertFilesToBinaries(ov.Files, tmplVarsOv)
 		if err != nil {
 			return nil, err
 		}

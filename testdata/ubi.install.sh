@@ -349,6 +349,10 @@ resolve_asset_filename() {
   
   # --- Apply Rules ---
   ASSET_FILENAME=""
+  if [ "${UNAME_ARCH}" = 'amd64' ] && true
+  then
+    ARCH='x86_64'
+  fi
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then
     OS='macOS'
@@ -360,10 +364,6 @@ resolve_asset_filename() {
   if [ "${UNAME_OS}" = 'windows' ] && true
   then
     OS='Windows'
-  fi
-  if [ "${UNAME_ARCH}" = 'amd64' ] && true
-  then
-    ARCH='x86_64'
   fi
   if [ "${UNAME_OS}" = 'darwin' ] && true
   then

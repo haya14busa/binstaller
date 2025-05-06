@@ -9,11 +9,11 @@ asset:
           path: xh-${TAG}-${ARCH}-${OS}/xh
     rules:
         - when:
-            arch: arm64
-          arch: aarch64
-        - when:
             arch: amd64
           arch: x86_64
+        - when:
+            arch: arm64
+          arch: aarch64
         - when:
             os: darwin
           os: apple-darwin

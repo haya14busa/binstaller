@@ -441,7 +441,7 @@ execute() {
   log_info "Installing binary to ${INSTALL_PATH}"
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   install "${BINARY_PATH}" "${INSTALL_PATH}"
-  log_info "${NAME} installation complete!"
+  log_info "${BINARY_NAME} installation complete!"
 }
 
 # --- Configuration  ---

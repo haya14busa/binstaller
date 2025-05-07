@@ -1,0 +1,23 @@
+schema: v1
+repo: haya14busa/bump
+asset:
+    template: bump_${VERSION}_${OS}_${ARCH}${EXT}
+    default_extension: .tar.gz
+    rules:
+        - when:
+            arch: amd64
+          arch: x86_64
+        - when:
+            os: darwin
+          os: Darwin
+        - when:
+            os: linux
+          os: Linux
+    arch_emulation:
+        rosetta2: true
+checksums:
+    template: checksums.txt
+    algorithm: sha256
+supported_platforms:
+    - os: linux
+      arch: amd64

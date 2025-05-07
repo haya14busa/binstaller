@@ -42,15 +42,8 @@ settings from a source like a GoReleaser config file or a GitHub repository.`,
 				initCommitSHA,  // commit
 				initName,       // nameOverride
 			)
-			// TODO: Add validation: require --file or --repo for goreleaser?
 		case "github":
-			// TODO: Implement githubProbeAdapter
-			log.Errorf("source 'github' not yet implemented")
-			return fmt.Errorf("source 'github' not yet implemented")
-		case "cli":
-			// TODO: Implement flagsAdapter logic
-			log.Errorf("source 'cli' not yet implemented")
-			return fmt.Errorf("source 'cli' not yet implemented")
+			adapter = datasource.NewGitHubAdapter(initRepo)
 		case "aqua":
 			// Use --file for registry YAML, or stdin if not specified
 			switch initSourceFile {
@@ -125,7 +118,7 @@ func init() {
 	rootCmd.AddCommand(initCmd)
 
 	// Required flags
-	initCmd.Flags().StringVar(&initSource, "source", "", "Source type to detect spec from (required: goreleaser, github, cli, file)")
+	initCmd.Flags().StringVar(&initSource, "source", "", "Source type to detect spec from (required: goreleaser, aqua, github)")
 	_ = initCmd.MarkFlagRequired("source")
 
 	// Optional flags (depending on source)

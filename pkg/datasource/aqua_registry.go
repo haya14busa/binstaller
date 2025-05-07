@@ -23,13 +23,13 @@ type AquaRegistryAdapter struct {
 }
 
 // NewAquaRegistryAdapterFromReader creates an adapter from an io.Reader (stdin, file, etc.).
-func NewAquaRegistryAdapterFromReader(reader io.Reader) SourceAdapter {
+func NewAquaRegistryAdapterFromReader(reader io.Reader) *AquaRegistryAdapter {
 	return &AquaRegistryAdapter{reader: reader}
 }
 
 // NewAquaRegistryAdapterFromRepo creates an adapter that fetches the registry YAML from GitHub.
 // If ref is empty, "HEAD" is used.
-func NewAquaRegistryAdapterFromRepo(repo string, ref string) SourceAdapter {
+func NewAquaRegistryAdapterFromRepo(repo string, ref string) *AquaRegistryAdapter {
 	if ref == "" {
 		ref = "HEAD"
 	}
@@ -250,7 +250,10 @@ func (a *AquaRegistryAdapter) GenerateInstallSpec(ctx context.Context) (*spec.In
 	} else {
 		return nil, errors.New("no input source provided")
 	}
+	return genSpecFromRegistryYAML(ctx, r)
+}
 
+func genSpecFromRegistryYAML(ctx context.Context, r io.Reader) (*spec.InstallSpec, error) {
 	// Parse YAML into Aqua's official struct
 	var regConfig registry.Config
 	dec := yaml.NewDecoder(r)

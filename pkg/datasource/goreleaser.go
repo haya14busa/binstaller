@@ -27,33 +27,30 @@ var (
 
 // goreleaserAdapter implements the SourceAdapter interface for GoReleaser config files.
 type goreleaserAdapter struct {
-	commit   string
-	filePath string
+	repo         string
+	filePath     string
+	commit       string
+	nameOverride string
 }
 
 // NewGoReleaserAdapter creates a new adapter for GoReleaser sources.
-func NewGoReleaserAdapter(commit, filePath string) SourceAdapter {
+func NewGoReleaserAdapter(repo, filePath, commit, nameOverride string) SourceAdapter {
 	return &goreleaserAdapter{
-		commit:   commit,
-		filePath: filePath,
+		repo:         repo,
+		filePath:     filePath,
+		commit:       commit,
+		nameOverride: nameOverride,
 	}
 }
 
-// Detect generates an InstallSpec from a GoReleaser configuration file.
+// GenerateInstallSpec generates an InstallSpec from a GoReleaser configuration file.
 // It can load the configuration from a local file path or a GitHub repository.
-// It uses input.Flags["name"] and input.Repo as overrides if provided.
-func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spec.InstallSpec, error) {
-	log.Infof("detecting InstallSpec using goreleaserAdapter")
-	log.Debugf("Input - FilePath: %s, Repo: %s, Flags: %+v", input.FilePath, input.Repo, input.Flags)
+// It uses the fields provided at construction as overrides if provided.
+func (a *goreleaserAdapter) GenerateInstallSpec(ctx context.Context) (*spec.InstallSpec, error) {
+	log.Infof("generating InstallSpec using goreleaserAdapter")
+	log.Debugf("Fields - FilePath: %s, Repo: %s, NameOverride: %s", a.filePath, a.repo, a.nameOverride)
 
-	// Use input.Repo if provided, otherwise it's empty for local file loading
-	repoOverride := input.Repo
-	nameOverride := ""
-	if input.Flags != nil {
-		nameOverride = input.Flags["name"] // Get name override from flags map
-	}
-
-	project, err := loadGoReleaserConfig(repoOverride, input.FilePath, "")
+	project, err := loadGoReleaserConfig(a.repo, a.filePath, a.commit)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load goreleaser config")
 	}
@@ -82,12 +79,12 @@ func (a *goreleaserAdapter) Detect(ctx context.Context, input DetectInput) (*spe
 	project = &gorelCtx.Config
 
 	// Map goreleaser config.Project to spec.InstallSpec, passing overrides
-	installSpec, err := mapToGoInstallerSpec(project, nameOverride, repoOverride)
+	installSpec, err := mapToGoInstallerSpec(project, a.nameOverride, a.repo)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to map goreleaser config to InstallSpec")
 	}
 
-	log.Info("successfully detected InstallSpec from goreleaser source")
+	log.Info("successfully generated InstallSpec from goreleaser source")
 	return installSpec, nil
 }
 
@@ -252,29 +249,6 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 
 	log.Infof("initial mapping from goreleaser config complete")
 	return s, nil
-}
-
-// formatToExtension converts a goreleaser archive format to a file extension.
-func formatToExtension(format string) string {
-	switch format {
-	case "tar.gz":
-		return ".tar.gz"
-	case "tgz":
-		return ".tgz" // Alias for tar.gz
-	case "tar.xz":
-		return ".tar.xz"
-	case "tar":
-		return ".tar"
-	case "zip":
-		return ".zip"
-	case "gz":
-		return ".gz" // Less common for archives, but possible
-	case "binary":
-		return "" // No extension for binary format
-	default:
-		log.Warnf("unknown goreleaser archive format '%s', assuming no extension", format)
-		return ""
-	}
 }
 
 // deriveSupportedPlatforms generates a list of platforms from goreleaser build configurations.

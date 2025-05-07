@@ -1,0 +1,31 @@
+schema: v1
+name: dua
+repo: Byron/dua-cli
+asset:
+    template: dua-${TAG}-${ARCH}-${OS}${EXT}
+    default_extension: .tar.gz
+    binaries:
+        - name: dua
+          path: dua-${TAG}-${ARCH}-${OS}/dua
+    rules:
+        - when:
+            arch: amd64
+          arch: x86_64
+        - when:
+            os: darwin
+          os: apple-darwin
+        - when:
+            os: linux
+          os: unknown-linux-musl
+        - when:
+            os: windows
+          os: pc-windows-msvc
+        - when:
+            os: linux
+            arch: arm64
+          arch: aarch64
+        - when:
+            os: windows
+          ext: .zip
+    arch_emulation:
+        rosetta2: true

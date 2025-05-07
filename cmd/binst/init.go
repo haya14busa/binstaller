@@ -33,20 +33,15 @@ settings from a source like a GoReleaser config file or a GitHub repository.`,
 		log.Infof("Running init command...")
 
 		var adapter datasource.SourceAdapter
-		var input datasource.DetectInput
 
 		switch initSource {
 		case "goreleaser":
-			adapter = datasource.NewGoReleaserAdapter(initCommitSHA, initSourceFile)
-			input = datasource.DetectInput{
-				FilePath: initSourceFile,          // Path to .goreleaser.yml
-				Repo:     initRepo,                // Pass repo flag value
-				Flags:    make(map[string]string), // Initialize flags map
-				// Tag is not directly used by goreleaser adapter's Load currently, but keep for consistency
-			}
-			if initName != "" {
-				input.Flags["name"] = initName // Pass name override via Flags map
-			}
+			adapter = datasource.NewGoReleaserAdapter(
+				initRepo,       // repo
+				initSourceFile, // filePath
+				initCommitSHA,  // commit
+				initName,       // nameOverride
+			)
 			// TODO: Add validation: require --file or --repo for goreleaser?
 		case "github":
 			// TODO: Implement githubProbeAdapter
@@ -56,22 +51,38 @@ settings from a source like a GoReleaser config file or a GitHub repository.`,
 			// TODO: Implement flagsAdapter logic
 			log.Errorf("source 'cli' not yet implemented")
 			return fmt.Errorf("source 'cli' not yet implemented")
-		case "file":
-			// TODO: Implement fileAdapter (for reading existing .binstaller.yml)
-			log.Errorf("source 'file' not yet implemented")
-			return fmt.Errorf("source 'file' not yet implemented")
+		case "aqua":
+			// Use --file for registry YAML, or stdin if not specified
+			switch initSourceFile {
+			case "":
+				// No file: use repo (and optionally commit SHA/ref)
+				if initRepo == "" {
+					return fmt.Errorf("--repo is required for aqua source when --file is not specified")
+				}
+				adapter = datasource.NewAquaRegistryAdapterFromRepo(initRepo, initCommitSHA)
+			case "-":
+				// --file=- means stdin
+				adapter = datasource.NewAquaRegistryAdapterFromReader(os.Stdin)
+			default:
+				// --file=path
+				f, err := os.Open(initSourceFile)
+				if err != nil {
+					return fmt.Errorf("failed to open aqua registry file: %w", err)
+				}
+				defer f.Close()
+				adapter = datasource.NewAquaRegistryAdapterFromReader(f)
+			}
 		default:
 			err := fmt.Errorf("unknown source specified: %s. Valid sources are: goreleaser, github, cli, file", initSource)
 			log.WithError(err).Error("invalid source")
 			return err
 		}
 
-		// Create context
-		ctx := context.Background() // TODO: Add timeout from global flags?
+		ctx := context.Background()
 
-		// Detect the InstallSpec
-		log.Infof("Detecting InstallSpec using source: %s", initSource)
-		installSpec, err := adapter.Detect(ctx, input)
+		// Generate the InstallSpec
+		log.Infof("Generating InstallSpec using source: %s", initSource)
+		installSpec, err := adapter.GenerateInstallSpec(ctx)
 		if err != nil {
 			log.WithError(err).Error("Failed to detect install spec")
 			return fmt.Errorf("failed to detect install spec: %w", err)

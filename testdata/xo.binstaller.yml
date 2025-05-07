@@ -1,0 +1,9 @@
+schema: v1
+repo: xo/xo
+asset:
+    template: xo-${VERSION}-${OS}-${ARCH}${EXT}
+    default_extension: .tar.bz2
+    rules:
+        - when:
+            os: windows
+          ext: .zip

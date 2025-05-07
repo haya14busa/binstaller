@@ -19,16 +19,5 @@ hash_sha256() {
 }
 
 hash_verify() {
-  TARGET=$1
-  checksums=$2
-  want=$(extract_hash "${TARGET}" "${checksums}")
-  if [ -z "$want" ]; then
-    log_err "hash_verify unable to find checksum for '${TARGET}' in '${checksums}'"
-    return 1
-  fi
-  got=$(hash_sha256 "$TARGET")
-  if [ "$want" != "$got" ]; then
-    log_err "hash_verify checksum for '$TARGET' did not verify ${want} vs $got"
-    return 1
-  fi
+  hash_verify_internal "$1" "$2" hash_sha256
 }

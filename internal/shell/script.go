@@ -3,9 +3,7 @@ package shell
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
-	"time"
 
 	"github.com/haya14busa/goinstaller/pkg/spec"
 	"github.com/pkg/errors"
@@ -70,6 +68,8 @@ func hashFunc(installSpec *spec.InstallSpec) string {
 		return hashMD5
 	case "sha256":
 		return hashSHA256
+	case "sha512":
+		return hashSHA512
 	}
 	return hashSHA256
 }
@@ -77,20 +77,20 @@ func hashFunc(installSpec *spec.InstallSpec) string {
 // createFuncMap defines the functions available to the Go template.
 func createFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"join":    strings.Join,
-		"replace": strings.ReplaceAll,
-		"time": func(s string) string {
-			return time.Now().UTC().Format(s)
-		},
-		"tolower": strings.ToLower,
-		"toupper": strings.ToUpper,
-		"trim":    strings.TrimSpace,
 		"default": func(def, val interface{}) interface{} {
 			sVal := fmt.Sprintf("%v", val)
 			if sVal == "" || sVal == "0" || sVal == "<nil>" || sVal == "false" {
 				return def
 			}
 			return val
+		},
+		"hasBinaryOverride": func(asset spec.AssetConfig) bool {
+			for _, rule := range asset.Rules {
+				if len(rule.Binaries) > 0 {
+					return true
+				}
+			}
+			return false
 		},
 	}
 }

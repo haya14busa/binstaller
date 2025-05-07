@@ -8,5 +8,5 @@ dist/
 treeout
 coverage.txt
 .vscode/
-binst
+/binst
 install.sh

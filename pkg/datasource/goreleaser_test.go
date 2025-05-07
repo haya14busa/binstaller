@@ -22,12 +22,14 @@ func setupGoReleaserTest(t *testing.T, goreleaserConfigContent string) (*spec.In
 	}
 	defer cleanupTempFile(tmpFile)
 
-	adapter := datasource.NewGoReleaserAdapter("", tmpFile.Name())
-	input := datasource.DetectInput{
-		FilePath: tmpFile.Name(),
-	}
+	adapter := datasource.NewGoReleaserAdapter(
+		"",             // repo
+		tmpFile.Name(), // filePath
+		"",             // commit
+		"",             // nameOverride
+	)
 
-	installSpec, err := adapter.Detect(context.Background(), input)
+	installSpec, err := adapter.GenerateInstallSpec(context.Background())
 	return installSpec, err
 }
 

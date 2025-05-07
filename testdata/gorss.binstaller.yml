@@ -1,0 +1,18 @@
+schema: v1
+name: gorss
+repo: Lallassu/gorss
+asset:
+    template: gorss_${OS}.tar.gz
+    default_extension: .tar.gz
+    binaries:
+        - name: gorss
+          path: dist/gorss_${OS}
+    rules:
+        - when:
+            os: darwin
+          os: osx
+    arch_emulation:
+        rosetta2: true
+supported_platforms:
+    - os: linux
+      arch: amd64

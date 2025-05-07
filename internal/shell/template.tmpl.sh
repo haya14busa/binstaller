@@ -27,7 +27,7 @@ EOF
 {{ .ShellFunctions }}
 
 parse_args() {
-  BINDIR="./bin"
+  BINDIR="{{ .DefaultBinDir }}"
   while getopts "b:dh?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;

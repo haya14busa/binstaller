@@ -24,7 +24,7 @@ func Generate(installSpec *spec.InstallSpec) ([]byte, error) {
 	if installSpec == nil {
 		return nil, errors.New("install spec cannot be nil")
 	}
-	// Apply spec defaults first - this is still useful for the spec structure itself
+	// Apply spec defaults first
 	installSpec.SetDefaults()
 
 	// --- Prepare Template Data ---

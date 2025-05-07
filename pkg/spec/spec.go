@@ -8,6 +8,7 @@ type InstallSpec struct {
 	Name               string             `yaml:"name,omitempty"`            // Optiona. Binary name
 	Repo               string             `yaml:"repo"`                      // GitHub owner/repo (e.g., "owner/repo")
 	DefaultVersion     string             `yaml:"default_version,omitempty"` // Default: "latest"
+	DefaultBinDir      string             `yaml:"default_bin_dir,omitempty"` // Default: "${BINSTALLER_BIN} or ${HOME}/.local/bin"
 	Variant            *VariantConfig     `yaml:"variant,omitempty"`
 	Asset              AssetConfig        `yaml:"asset"`
 	Checksums          *ChecksumConfig    `yaml:"checksums,omitempty"`
@@ -107,6 +108,9 @@ func (s *InstallSpec) SetDefaults() {
 	}
 	if s.DefaultVersion == "" {
 		s.DefaultVersion = "latest"
+	}
+	if s.DefaultBinDir == "" {
+		s.DefaultBinDir = "${BINSTALLER_BIN:-${HOME}/.local/bin}"
 	}
 	if s.Variant != nil {
 		if s.Variant.Detect == nil {

@@ -309,7 +309,7 @@ hash_verify_internal() {
 
 
 parse_args() {
-  BINDIR="./bin"
+  BINDIR="${BINSTALLER_BIN:-${HOME}/.local/bin}"
   while getopts "b:dh?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;

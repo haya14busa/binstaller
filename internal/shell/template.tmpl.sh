@@ -28,10 +28,11 @@ EOF
 
 parse_args() {
   BINDIR="{{ .DefaultBinDir }}"
-  while getopts "b:dh?x" arg; do
+  while getopts "b:dqh?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;
     d) log_set_priority 10 ;;
+    q) log_set_priority 3 ;;
     h | \?) usage "$0" ;;
     x) set -x ;;
     esac

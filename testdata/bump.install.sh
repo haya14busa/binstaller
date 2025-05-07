@@ -242,7 +242,7 @@ untar() {
     # Workaround: extract to a subdir and move contents up if stripping
     if [ "$strip_components" -gt 0 ]; then
       extract_dir=$(basename "${tarball%.zip}")_extracted
-      unzip "${tarball}" -d "${extract_dir}"
+      unzip -q "${tarball}" -d "${extract_dir}"
       # Move contents of the *first* directory found inside extract_dir up
       # This assumes wrap_in_directory=true convention
       first_subdir=$(find "${extract_dir}" -mindepth 1 -maxdepth 1 -type d -print -quit)
@@ -257,7 +257,7 @@ untar() {
         # Files are extracted in current dir anyway, proceed
       fi
     else
-      unzip "${tarball}"
+      unzip -q "${tarball}"
     fi
     ;;
   *)
@@ -309,11 +309,12 @@ hash_verify_internal() {
 
 
 parse_args() {
-  BINDIR="./bin"
-  while getopts "b:dh?x" arg; do
+  BINDIR="${BINSTALLER_BIN:-${HOME}/.local/bin}"
+  while getopts "b:dqh?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;
     d) log_set_priority 10 ;;
+    q) log_set_priority 3 ;;
     h | \?) usage "$0" ;;
     x) set -x ;;
     esac
@@ -434,7 +435,7 @@ execute() {
   log_info "Installing binary to ${INSTALL_PATH}"
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   install "${BINARY_PATH}" "${INSTALL_PATH}"
-  log_info "${NAME} installation complete!"
+  log_info "${BINARY_NAME} installation complete!"
 }
 
 # --- Configuration  ---

@@ -27,11 +27,12 @@ EOF
 {{ .ShellFunctions }}
 
 parse_args() {
-  BINDIR="./bin"
-  while getopts "b:dh?x" arg; do
+  BINDIR="{{ .DefaultBinDir }}"
+  while getopts "b:dqh?x" arg; do
     case "$arg" in
     b) BINDIR="$OPTARG" ;;
     d) log_set_priority 10 ;;
+    q) log_set_priority 3 ;;
     h | \?) usage "$0" ;;
     x) set -x ;;
     esac
@@ -179,7 +180,7 @@ execute() {
   log_info "Installing binary to ${INSTALL_PATH}"
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
   install "${BINARY_PATH}" "${INSTALL_PATH}"
-  log_info "${NAME} installation complete!"
+  log_info "${BINARY_NAME} installation complete!"
   {{- end }}
 }
 

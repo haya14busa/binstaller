@@ -26,3 +26,7 @@ set -e
 ./binst init --source aqua --repo SuperCuber/dotter --output=testdata/dotter.binstaller.yml --sha='1436b9b02096f39ace945d9c56adb7a5b11df186'
 # Test github source
 ./binst init --source github --repo haya14busa/bump --output=testdata/bump.binstaller.yml
+# Test default bin dir with yq modification
+./binst init --source github --repo charmbracelet/gum --output=testdata/gum.binstaller.yml
+yq -i '.unpack.strip_components = 1' testdata/gum.binstaller.yml
+yq -i '.default_bindir = "./bin"' testdata/gum.binstaller.yml

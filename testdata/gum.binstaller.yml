@@ -1,0 +1,27 @@
+schema: v1
+repo: charmbracelet/gum
+asset:
+  template: gum_${VERSION}_${OS}_${ARCH}${EXT}
+  default_extension: .tar.gz
+  rules:
+    - when:
+        arch: amd64
+      arch: x86_64
+    - when:
+        os: darwin
+      os: Darwin
+    - when:
+        os: linux
+      os: Linux
+    - when:
+        os: windows
+      os: Windows
+    - when:
+        os: windows
+      ext: .zip
+checksums:
+  template: checksums.txt
+  algorithm: sha256
+unpack:
+  strip_components: 1
+default_bindir: ./bin

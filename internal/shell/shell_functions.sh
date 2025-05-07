@@ -12,7 +12,7 @@ untar() {
     # Workaround: extract to a subdir and move contents up if stripping
     if [ "$strip_components" -gt 0 ]; then
       extract_dir=$(basename "${tarball%.zip}")_extracted
-      unzip "${tarball}" -d "${extract_dir}"
+      unzip -q "${tarball}" -d "${extract_dir}"
       # Move contents of the *first* directory found inside extract_dir up
       # This assumes wrap_in_directory=true convention
       first_subdir=$(find "${extract_dir}" -mindepth 1 -maxdepth 1 -type d -print -quit)
@@ -27,7 +27,7 @@ untar() {
         # Files are extracted in current dir anyway, proceed
       fi
     else
-      unzip "${tarball}"
+      unzip -q "${tarball}"
     fi
     ;;
   *)

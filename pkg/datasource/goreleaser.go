@@ -141,7 +141,7 @@ func mapToGoInstallerSpec(project *config.Project, nameOverride, repoOverride st
 		}
 		s.Checksums = &spec.ChecksumConfig{
 			Template:  checksumTemplate,
-			Algorithm: project.Checksum.Algorithm, // Defaults handled by spec.SetDefaults()
+			Algorithm: project.Checksum.Algorithm,
 		}
 	}
 

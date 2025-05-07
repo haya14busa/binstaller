@@ -8,6 +8,7 @@ AQUA_REGISTRY_SHA='1436b9b02096f39ace945d9c56adb7a5b11df186'
 ignore_tools='
 cnappgoat # Not found in standard aqua registry
 sigspy # Not found in standard aqua registry
+bump # Not found in standard aqua registry
 '
 
 gen_config_and_installer() {

@@ -27,7 +27,6 @@ EOF
 {{ .ShellFunctions }}
 
 # --- Embedded Checksums (Format: VERSION:FILENAME:HASH) ---
-# Note: Version strings have 'v' prefix removed for consistency
 EMBEDDED_CHECKSUMS="
 {{- if .Checksums -}}
 {{- range $version, $checksums := .Checksums.EmbeddedChecksums }}
@@ -41,10 +40,6 @@ EMBEDDED_CHECKSUMS="
 find_embedded_checksum() {
   version="$1"
   filename="$2"
-  if [ -z "$EMBEDDED_CHECKSUMS" ]; then
-    return 1
-  fi
-  
   echo "$EMBEDDED_CHECKSUMS" | grep -E "^${version}:${filename}:" | cut -d':' -f3
 }
 

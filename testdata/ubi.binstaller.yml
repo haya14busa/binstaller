@@ -24,5 +24,5 @@ asset:
           template: ubi-${OS}-msvc-${ARCH}${EXT}
           ext: .zip
 checksums:
-    template: ${ASSET_FILENAME}.sha256
     algorithm: sha256
+    template: ${ASSET_FILENAME}.sha256

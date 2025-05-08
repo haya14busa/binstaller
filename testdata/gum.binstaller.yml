@@ -20,8 +20,8 @@ asset:
         os: windows
       ext: .zip
 checksums:
-  template: checksums.txt
   algorithm: sha256
+  template: checksums.txt
 unpack:
   strip_components: 1
 default_bindir: ./bin

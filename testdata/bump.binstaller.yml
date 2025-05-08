@@ -16,8 +16,8 @@ asset:
     arch_emulation:
         rosetta2: true
 checksums:
-    template: checksums.txt
     algorithm: sha256
+    template: checksums.txt
 supported_platforms:
     - os: linux
       arch: amd64

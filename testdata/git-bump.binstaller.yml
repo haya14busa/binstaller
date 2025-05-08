@@ -10,8 +10,8 @@ asset:
     arch_emulation:
         rosetta2: true
 checksums:
-    template: git-bump_${VERSION}_checksums.txt
     algorithm: sha256
+    template: git-bump_${VERSION}_checksums.txt
 supported_platforms:
     - os: linux
       arch: amd64

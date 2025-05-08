@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
@@ -102,14 +103,57 @@ func (e *Embedder) Embed() (*spec.InstallSpec, error) {
 	return e.Spec, nil
 }
 
+// githubRelease represents the minimal structure needed from GitHub release API
+type githubRelease struct {
+	TagName string `json:"tag_name"`
+}
+
 // resolveVersion resolves "latest" to an actual version string
 func (e *Embedder) resolveVersion(version string) (string, error) {
 	if version != "latest" {
 		return version, nil
 	}
 
-	// TODO: Implement GitHub API call to find the latest release
-	return "", fmt.Errorf("resolving latest version not implemented yet")
+	if e.Spec == nil || e.Spec.Repo == "" {
+		return "", fmt.Errorf("repository not specified in spec")
+	}
+
+	// Use GitHub API to get the latest release
+	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", e.Spec.Repo)
+	
+	// Set up the request with Accept header for JSON response
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to get latest release: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	// Check for successful response
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get latest release, status code: %d", resp.StatusCode)
+	}
+	
+	// Parse the JSON response
+	var release githubRelease
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&release); err != nil {
+		return "", fmt.Errorf("failed to parse GitHub API response: %w", err)
+	}
+	
+	if release.TagName == "" {
+		return "", fmt.Errorf("empty tag name returned from GitHub")
+	}
+	
+	log.Infof("Resolved latest version: %s", release.TagName)
+	return release.TagName, nil
 }
 
 // downloadAndParseChecksumFile downloads a checksum file from GitHub releases and parses it

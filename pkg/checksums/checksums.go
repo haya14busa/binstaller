@@ -46,9 +46,11 @@ func (e *Embedder) Embed() (*spec.InstallSpec, error) {
 		return nil, fmt.Errorf("InstallSpec cannot be nil")
 	}
 
-	// Check that the Checksums section exists
+	// If Checksums section doesn't exist, create it with defaults
 	if e.Spec.Checksums == nil {
-		return nil, fmt.Errorf("checksums section not found in InstallSpec")
+		e.Spec.Checksums = &spec.ChecksumConfig{
+			Algorithm: "sha256", // Default algorithm
+		}
 	}
 
 	// Resolve version if it's "latest"
@@ -108,9 +110,9 @@ type githubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
-// resolveVersion resolves "latest" to an actual version string
+// resolveVersion resolves "latest" or empty version to an actual version string
 func (e *Embedder) resolveVersion(version string) (string, error) {
-	if version != "latest" {
+	if version != "latest" && version != "" {
 		return version, nil
 	}
 

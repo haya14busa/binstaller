@@ -73,15 +73,6 @@ This command supports three modes of operation:
 			return fmt.Errorf("failed to unmarshal install spec YAML from %s: %w", cfgFile, err)
 		}
 
-		// Apply defaults
-		installSpec.SetDefaults()
-
-		// Ensure checksums section exists
-		if installSpec.Checksums == nil {
-			log.Error("No checksums configuration found in the InstallSpec")
-			return fmt.Errorf("checksums configuration is required in the InstallSpec")
-		}
-
 		// Create the embedder
 		var mode checksums.EmbedMode
 		switch embedMode {

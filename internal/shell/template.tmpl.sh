@@ -27,11 +27,12 @@ EOF
 {{ .ShellFunctions }}
 
 # --- Embedded Checksums (Format: VERSION:FILENAME:HASH) ---
+# Note: Version strings have 'v' prefix removed for consistency
 EMBEDDED_CHECKSUMS="
 {{- if .Checksums -}}
 {{- range $version, $checksums := .Checksums.EmbeddedChecksums }}
 {{- range $checksum := $checksums }}
-{{ $version }}:{{ $checksum.Filename }}:{{ $checksum.Hash }}
+{{ trimPrefix $version "v" }}:{{ $checksum.Filename }}:{{ $checksum.Hash }}
 {{- end }}
 {{- end }}
 {{- end }}"

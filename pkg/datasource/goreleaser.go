@@ -297,7 +297,6 @@ func deriveSupportedPlatforms(builds []config.Build) []spec.Platform {
 		return cmp.Or(
 			cmp.Compare(i.OS, j.OS),
 			cmp.Compare(i.Arch, j.Arch),
-			cmp.Compare(i.Variant, j.Variant),
 		)
 	})
 	return result

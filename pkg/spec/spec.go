@@ -9,7 +9,6 @@ type InstallSpec struct {
 	Repo               string             `yaml:"repo"`                      // GitHub owner/repo (e.g., "owner/repo")
 	DefaultVersion     string             `yaml:"default_version,omitempty"` // Default: "latest"
 	DefaultBinDir      string             `yaml:"default_bin_dir,omitempty"` // Default: "${BINSTALLER_BIN} or ${HOME}/.local/bin"
-	Variant            *VariantConfig     `yaml:"variant,omitempty"`
 	Asset              AssetConfig        `yaml:"asset"`
 	Checksums          *ChecksumConfig    `yaml:"checksums,omitempty"`
 	Attestation        *AttestationConfig `yaml:"attestation,omitempty"`
@@ -17,18 +16,10 @@ type InstallSpec struct {
 	SupportedPlatforms []Platform         `yaml:"supported_platforms,omitempty"`
 }
 
-// Platform defines a supported OS/Arch/Variant combination.
+// Platform defines a supported OS/Arch combination.
 type Platform struct {
-	OS      string `yaml:"os"`
-	Arch    string `yaml:"arch"`
-	Variant string `yaml:"variant,omitempty"`
-}
-
-// VariantConfig handles per-OS/ARCH variants (e.g., gnu vs musl).
-type VariantConfig struct {
-	Detect  *bool    `yaml:"detect,omitempty"` // Default: true
-	Default string   `yaml:"default"`          // Fallback variant
-	Choices []string `yaml:"choices,omitempty"`
+	OS   string `yaml:"os"`
+	Arch string `yaml:"arch"`
 }
 
 // AssetConfig describes how to construct download URLs and names.
@@ -59,9 +50,8 @@ type Binary struct {
 
 // PlatformCondition specifies conditions for an AssetRule.
 type PlatformCondition struct {
-	OS      string `yaml:"os,omitempty"`
-	Arch    string `yaml:"arch,omitempty"`
-	Variant string `yaml:"variant,omitempty"`
+	OS   string `yaml:"os,omitempty"`
+	Arch string `yaml:"arch,omitempty"`
 }
 
 // NamingConvention controls the casing of placeholders.
@@ -111,12 +101,6 @@ func (s *InstallSpec) SetDefaults() {
 	}
 	if s.DefaultBinDir == "" {
 		s.DefaultBinDir = "${BINSTALLER_BIN:-${HOME}/.local/bin}"
-	}
-	if s.Variant != nil {
-		if s.Variant.Detect == nil {
-			detect := true
-			s.Variant.Detect = &detect
-		}
 	}
 	if s.Asset.NamingConvention == nil {
 		s.Asset.NamingConvention = &NamingConvention{}

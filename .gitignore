@@ -10,3 +10,5 @@ coverage.txt
 .vscode/
 /binst
 install.sh
+
+**/.claude/settings.local.json

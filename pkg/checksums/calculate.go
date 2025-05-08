@@ -113,35 +113,39 @@ type checksumResult struct {
 }
 
 // generateAssetFilename creates an asset filename for a specific OS and Arch
-func (e *Embedder) generateAssetFilename(os, arch string) (string, error) {
+func (e *Embedder) generateAssetFilename(osInput, archInput string) (string, error) {
 	if e.Spec == nil || e.Spec.Asset.Template == "" {
 		return "", fmt.Errorf("asset template not defined in spec")
 	}
 
-	// Apply OS/Arch naming conventions
+	// Keep original values for rule matching
+	osMatch := strings.ToLower(osInput)
+	archMatch := strings.ToLower(archInput)
+
+	// Create formatted values for template substitution
+	osValue := osMatch
+	archValue := archMatch
+	
+	// Apply OS/Arch naming conventions for template values
 	if e.Spec.Asset.NamingConvention != nil {
 		if e.Spec.Asset.NamingConvention.OS == "titlecase" {
-			os = titleCase(os)
-		} else {
-			os = strings.ToLower(os)
+			osValue = titleCase(osValue)
 		}
-
-		arch = strings.ToLower(arch)
 	}
 
 	// Apply rules to get the right extension and override OS/Arch if needed
 	ext := e.Spec.Asset.DefaultExtension
 	template := e.Spec.Asset.Template
 
-	// Check if any rule applies
+	// Check if any rule applies - use osMatch/archMatch for condition checking
 	for _, rule := range e.Spec.Asset.Rules {
-		if (rule.When.OS == "" || rule.When.OS == os) &&
-			(rule.When.Arch == "" || rule.When.Arch == arch) {
+		if (rule.When.OS == "" || rule.When.OS == osMatch) &&
+			(rule.When.Arch == "" || rule.When.Arch == archMatch) {
 			if rule.OS != "" {
-				os = rule.OS
+				osValue = rule.OS
 			}
 			if rule.Arch != "" {
-				arch = rule.Arch
+				archValue = rule.Arch
 			}
 			if rule.Ext != "" {
 				ext = rule.Ext
@@ -157,8 +161,8 @@ func (e *Embedder) generateAssetFilename(os, arch string) (string, error) {
 	filename := template
 	filename = strings.ReplaceAll(filename, "${NAME}", e.Spec.Name)
 	filename = strings.ReplaceAll(filename, "${VERSION}", e.Version)
-	filename = strings.ReplaceAll(filename, "${OS}", os)
-	filename = strings.ReplaceAll(filename, "${ARCH}", arch)
+	filename = strings.ReplaceAll(filename, "${OS}", osValue)
+	filename = strings.ReplaceAll(filename, "${ARCH}", archValue)
 	filename = strings.ReplaceAll(filename, "${EXT}", ext)
 
 	// For consistency with the shell script, also handle repo owner/name expansion

@@ -190,9 +190,7 @@ func parseChecksumFileInternal(checksumFile string) (map[string]string, error) {
 		}
 
 		// Parse the line as a checksum entry
-		// Format could be either:
-		// 1. <hash>  <filename>
-		// 2. <hash> *<filename>
+		// Format: <hash> [*]<filename>
 		parts := strings.Fields(line)
 		if len(parts) < 2 {
 			log.Warnf("Ignoring invalid checksum line: %s", line)
@@ -200,17 +198,11 @@ func parseChecksumFileInternal(checksumFile string) (map[string]string, error) {
 		}
 
 		hash := parts[0]
-		filename := parts[1]
+		filename := parts[1]  // Take the second field as filename
 
 		// If the filename starts with *, remove it (common in standard checksums)
 		if strings.HasPrefix(filename, "*") {
 			filename = filename[1:]
-		}
-
-		// Some formats have the filename first, try to detect that
-		if len(hash) < 16 && len(filename) >= 16 {
-			// Swap them as the hash is likely the second part
-			hash, filename = filename, hash
 		}
 
 		checksums[filename] = hash
@@ -225,12 +217,6 @@ func parseChecksumFileInternal(checksumFile string) (map[string]string, error) {
 	}
 
 	return checksums, nil
-}
-
-// calculateChecksums downloads assets and calculates checksums
-func (e *Embedder) calculateChecksums() (map[string]string, error) {
-	// TODO: Implement asset downloading and checksum calculation
-	return nil, fmt.Errorf("calculate mode not implemented yet")
 }
 
 // createChecksumFilename creates the checksum filename using the template from the spec

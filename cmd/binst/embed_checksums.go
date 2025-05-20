@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/apex/log"
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/parser"
 	"github.com/haya14busa/goinstaller/pkg/checksums"
 	"github.com/haya14busa/goinstaller/pkg/spec"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -58,6 +59,12 @@ This command supports three modes of operation:
 
 		// Read the InstallSpec YAML file
 		log.Debugf("Reading InstallSpec from: %s", cfgFile)
+
+		ast, err := parser.ParseFile(cfgFile, parser.ParseComments)
+		if err != nil {
+			return err
+		}
+
 		yamlData, err := os.ReadFile(cfgFile)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to read install spec file: %s", cfgFile)
@@ -67,7 +74,7 @@ This command supports three modes of operation:
 		// Unmarshal YAML into InstallSpec struct
 		log.Debug("Unmarshalling InstallSpec YAML")
 		var installSpec spec.InstallSpec
-		err = yaml.Unmarshal(yamlData, &installSpec)
+		err = yaml.UnmarshalWithOptions(yamlData, &installSpec, yaml.UseOrderedMap())
 		if err != nil {
 			log.WithError(err).Errorf("Failed to unmarshal install spec YAML from: %s", cfgFile)
 			return fmt.Errorf("failed to unmarshal install spec YAML from %s: %w", cfgFile, err)
@@ -96,14 +103,14 @@ This command supports three modes of operation:
 			Mode:         mode,
 			Version:      embedVersion,
 			Spec:         &installSpec,
+			SpecAST:      ast,
 			ChecksumFile: embedFile,
 			AllPlatforms: embedAllPlatforms,
 		}
 
 		// Embed the checksums
 		log.Infof("Embedding checksums using %s mode for version: %s", mode, embedVersion)
-		updatedSpec, err := embedder.Embed()
-		if err != nil {
+		if err := embedder.Embed(); err != nil {
 			log.WithError(err).Error("Failed to embed checksums")
 			return fmt.Errorf("failed to embed checksums: %w", err)
 		}
@@ -117,7 +124,7 @@ This command supports three modes of operation:
 
 		// Write the updated InstallSpec back to the output file
 		log.Infof("Writing updated InstallSpec to file: %s", outputFile)
-		
+
 		// Ensure the output directory exists
 		outputDir := filepath.Dir(outputFile)
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
@@ -125,17 +132,8 @@ This command supports three modes of operation:
 			return fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
 		}
 
-		// Marshal the InstallSpec back to YAML
-		log.Debug("Marshalling InstallSpec to YAML")
-		updatedYAML, err := yaml.Marshal(updatedSpec)
-		if err != nil {
-			log.WithError(err).Error("Failed to marshal InstallSpec to YAML")
-			return fmt.Errorf("failed to marshal InstallSpec to YAML: %w", err)
-		}
-
 		// Write the YAML to the output file
-		err = os.WriteFile(outputFile, updatedYAML, 0644)
-		if err != nil {
+		if err := os.WriteFile(outputFile, []byte(ast.String()), 0644); err != nil {
 			log.WithError(err).Errorf("Failed to write InstallSpec to file: %s", outputFile)
 			return fmt.Errorf("failed to write InstallSpec to file %s: %w", outputFile, err)
 		}

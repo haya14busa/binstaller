@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
 	"github.com/haya14busa/goinstaller/pkg/spec"
 )
 
@@ -36,14 +38,15 @@ type Embedder struct {
 	Mode         EmbedMode
 	Version      string
 	Spec         *spec.InstallSpec
+	SpecAST      *ast.File
 	ChecksumFile string
 	AllPlatforms bool
 }
 
 // Embed performs the checksum embedding process and returns the updated spec
-func (e *Embedder) Embed() (*spec.InstallSpec, error) {
+func (e *Embedder) Embed() error {
 	if e.Spec == nil {
-		return nil, fmt.Errorf("InstallSpec cannot be nil")
+		return fmt.Errorf("InstallSpec cannot be nil")
 	}
 
 	// If Checksums section doesn't exist, create it with defaults
@@ -56,7 +59,7 @@ func (e *Embedder) Embed() (*spec.InstallSpec, error) {
 	// Resolve version if it's "latest"
 	resolvedVersion, err := e.resolveVersion(e.Version)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve version: %w", err)
+		return fmt.Errorf("failed to resolve version: %w", err)
 	}
 	e.Version = resolvedVersion
 
@@ -80,11 +83,11 @@ func (e *Embedder) Embed() (*spec.InstallSpec, error) {
 	case EmbedModeCalculate:
 		checksums, embedErr = e.calculateChecksums()
 	default:
-		return nil, fmt.Errorf("invalid mode: %s", e.Mode)
+		return fmt.Errorf("invalid mode: %s", e.Mode)
 	}
 
 	if embedErr != nil {
-		return nil, fmt.Errorf("failed to embed checksums: %w", embedErr)
+		return fmt.Errorf("failed to embed checksums: %w", embedErr)
 	}
 
 	// Convert the checksums to EmbeddedChecksum structs
@@ -99,8 +102,23 @@ func (e *Embedder) Embed() (*spec.InstallSpec, error) {
 
 	// Update the spec with the new checksums
 	e.Spec.Checksums.EmbeddedChecksums[e.Version] = embeddedChecksums
-
-	return e.Spec, nil
+	p, err := yaml.PathString("$.checksums")
+	if err != nil {
+		return err
+	}
+	checksumConfig := spec.ChecksumConfig{
+		EmbeddedChecksums: map[string][]spec.EmbeddedChecksum{
+			resolvedVersion: embeddedChecksums,
+		},
+	}
+	node, err := yaml.ValueToNode(checksumConfig)
+	if err != nil {
+		return err
+	}
+	if err := p.MergeFromNode(e.SpecAST, node); err != nil {
+		return err
+	}
+	return nil
 }
 
 // githubRelease represents the minimal structure needed from GitHub release API

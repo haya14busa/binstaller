@@ -268,9 +268,7 @@ func parseChecksumFileInternal(checksumFile string) (map[string]string, error) {
 		filename := parts[1] // Take the second field as filename
 
 		// If the filename starts with *, remove it (common in standard checksums)
-		if strings.HasPrefix(filename, "*") {
-			filename = filename[1:]
-		}
+		filename = strings.TrimPrefix(filename, "*")
 
 		checksums[filename] = hash
 	}

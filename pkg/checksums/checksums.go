@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/apex/log"
@@ -99,6 +100,11 @@ func (e *Embedder) Embed() error {
 		}
 		embeddedChecksums = append(embeddedChecksums, ec)
 	}
+	
+	// Sort embedded checksums by filename for consistent output
+	slices.SortStableFunc(embeddedChecksums, func(a, b spec.EmbeddedChecksum) int {
+		return strings.Compare(a.Filename, b.Filename)
+	})
 
 	// Update the spec with the new checksums
 	e.Spec.Checksums.EmbeddedChecksums[e.Version] = embeddedChecksums
@@ -106,10 +112,9 @@ func (e *Embedder) Embed() error {
 	if err != nil {
 		return err
 	}
+	// Create a checksumConfig with all existing checksums to preserve them
 	checksumConfig := spec.ChecksumConfig{
-		EmbeddedChecksums: map[string][]spec.EmbeddedChecksum{
-			resolvedVersion: embeddedChecksums,
-		},
+		EmbeddedChecksums: e.Spec.Checksums.EmbeddedChecksums,
 	}
 	node, err := yaml.ValueToNode(checksumConfig)
 	if err != nil {

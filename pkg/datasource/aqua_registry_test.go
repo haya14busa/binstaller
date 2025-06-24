@@ -175,7 +175,7 @@ func TestAquaRegistryAdapter_Binaries(t *testing.T) {
 	wantPath := "gh_${TAG}_${OS}_${ARCH}_bin"
 	if len(binaries) != 1 || binaries[0].Name != "gh" || binaries[0].Path != wantPath {
 		t.Errorf("Asset.Binaries: got %+v, want [{Name: \"gh\", Path: %q}]", binaries, wantPath)
-	
+	}
 }
 
 func TestAquaRegistryAdapter_AssetRules_Empty(t *testing.T) {

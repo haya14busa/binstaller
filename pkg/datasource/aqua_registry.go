@@ -186,7 +186,7 @@ func convertReplacementsToRules(r registry.Replacements) []spec.AssetRule {
 	slices.SortStableFunc(rules, func(a, b spec.AssetRule) int {
 		return cmp.Or(
 			cmp.Compare(a.When.OS, b.When.OS),
-			cmp.Compare(b.When.Arch, b.When.Arch),
+			cmp.Compare(a.When.Arch, b.When.Arch),
 		)
 	})
 	return rules

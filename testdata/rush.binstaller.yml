@@ -1,6 +1,6 @@
 schema: v1
 repo: shenwei356/rush
-default_version: latest
+default_version: v0.6.1
 asset:
     template: ${NAME}_${OS}_${ARCH}${EXT}
     default_extension: .tar.gz

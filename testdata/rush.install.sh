@@ -323,7 +323,7 @@ parse_args() {
     esac
   done
   shift $((OPTIND - 1))
-  TAG="${1:-latest}"
+  TAG="${1:-v0.6.1}"
 }
 
 tag_to_version() {

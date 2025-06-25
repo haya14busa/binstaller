@@ -150,7 +150,7 @@ execute() {
     log_info "Using embedded checksum for verification"
     
     # Verify using embedded hash
-    got=$(hash_sha256 "${TMPDIR}/${ASSET_FILENAME}")
+    got=$(hash_compute "${TMPDIR}/${ASSET_FILENAME}")
     if [ "$got" != "$EMBEDDED_HASH" ]; then
       log_crit "Checksum verification failed for ${ASSET_FILENAME}"
       log_crit "Expected: ${EMBEDDED_HASH}"

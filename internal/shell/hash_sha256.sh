@@ -18,6 +18,10 @@ hash_sha256() {
   fi
 }
 
+hash_compute() {
+  hash_sha256 "$1"
+}
+
 hash_verify() {
   hash_verify_internal "$1" "$2" hash_sha256
 }

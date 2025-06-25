@@ -25,11 +25,14 @@ jobs:
 
     - run: make ci
 
-    - name: Test scripts
-      run: |
-        ./test/gen_config.sh
-        ./test/gen_installer.sh
-        ./test/all-supported-platforms-reviewdog.sh
+    - name: Generate test configs
+      run: make test-gen-configs
+
+    - name: Generate test installers
+      run: make test-gen-installers
+
+    - name: Test all supported platforms (reviewdog)
+      run: make test-all-platforms
 
     - name: Fail if any diff exists
       run: |
@@ -39,9 +42,7 @@ jobs:
         fi
 
     - name: Test running generated installers
-      run: |
-        ./test/run_installers.sh
+      run: make test-run-installers
 
     - name: Test aqua source
-      run: |
-        ./test/aqua_source.sh
+      run: make test-aqua-source

@@ -19,24 +19,14 @@ binstaller follows a simple two-step workflow:
 
 ```mermaid
 graph LR
-    A[GoReleaser config<br/>.goreleaser.yml] --> C[.binstaller.yml<br/>Configuration file]
-    B[GitHub releases<br/>API detection] --> C
-    D[Aqua registry<br/>package.yaml] --> C
-    E[Manual editing<br/>Custom config] --> C
+    A[GoReleaser config] --> |binst init| C[.binstaller.yml]
+    B[GitHub releases] --> |binst init| C
+    D[Aqua registry] --> |binst init| C
+    E[Manual editing] --> C
     
-    C --> G[.binstaller.yml<br/>with embedded checksums]
-    C --> F[install.sh<br/>Installation script]
-    G --> F
-    
-    A -.-> |binst init| C
-    B -.-> |binst init| C
-    D -.-> |binst init| C
-    C -.-> |binst embed-checksums<br/>(optional)| G
-    C -.-> |binst gen| F
-    G -.-> |binst gen| F
+    C --> |binst gen| F[Installation script]
     
     style C fill:#e1f5fe
-    style G fill:#fff3e0
     style F fill:#f3e5f5
 ```
 
@@ -170,12 +160,10 @@ supported_platforms:
 
 ### Security Features
 
-* **Optional Embedded Checksums**: Use `binst embed-checksums` to embed checksums directly into the configuration for enhanced security
+* **Embedded Checksums**: Use `binst embed-checksums` to embed checksums directly into the configuration for enhanced security
 * **Automatic Verification**: When checksums are embedded, downloaded binaries are automatically verified
 * **Reproducible Scripts**: Generated scripts are deterministic and traceable
 * **Flexible Security**: Choose between external checksum files or embedded checksums based on your needs
-
-*Future planned features*: SLSA attestation verification for enhanced supply chain security
 
 ### CI/CD Integration
 
@@ -189,22 +177,6 @@ Perfect for CI/CD pipelines where you need fast, reliable binary installations:
     echo "./bin" >> $GITHUB_PATH
 ```
 
-### Custom Asset Patterns
-
-Support for complex release asset naming patterns:
-
-```yaml
-asset:
-  template: ${NAME}_${VERSION}_${OS}_${ARCH}${EXT}
-  rules:
-    - when:
-        os: darwin
-      template: ${NAME}_${VERSION}_Darwin_${ARCH}${EXT}
-    - when:
-        os: windows
-      ext: .zip
-```
-
 ## 🎯 Why binstaller?
 
 binstaller provides a modern, secure approach to binary installation:
@@ -212,19 +184,6 @@ binstaller provides a modern, secure approach to binary installation:
 * **Universal Support**: Unlike tools focused only on Go, works with any static binary on GitHub
 * **Enhanced Security**: Embedded checksums provide better security than traditional approaches
 * **Flexible Configuration**: YAML-based configuration is more maintainable than command-line flags
-* **Active Development**: Continuously maintained and improved
-
-## 📚 Documentation
-
-For detailed documentation, check the `docs/` directory in the repository:
-
-* Configuration format and examples in `testdata/` directory
-* Design documents in `docs/design/`
-* Security considerations in `docs/security.md`
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see our [Contributing Guide](docs/contributing.md) for details.
 
 ## 📄 License
 

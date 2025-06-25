@@ -1,106 +1,237 @@
-# goinstaller
+# binstaller
 
 <p align="center">
-  <h3 align="center">goinstaller</h3>
-  <p align="center">A streamlined installer for Go binaries with enhanced security features.</p>
+  <h3 align="center">binstaller</h3>
+  <p align="center">A modern, secure binary installer generator with enhanced security features</p>
   <p align="center">
     <a href="/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square"></a>
+    <a href="https://github.com/haya14busa/binstaller/releases"><img alt="Release" src="https://img.shields.io/github/release/haya14busa/binstaller.svg?style=flat-square"></a>
   </p>
 </p>
 
 ---
 
-goinstaller is a fork of [godownloader](https://github.com/goreleaser/godownloader) that generates shell scripts to download the right package and version of Go binaries released with [GoReleaser](https://github.com/goreleaser/goreleaser). The generated scripts make it easy for users to install Go applications with a simple curl | bash command.
+**binstaller** (binst) is a modern binary installer generator that creates secure, reproducible installation scripts for static binaries distributed via GitHub releases. Works with Go binaries, Rust binaries, and any other static binaries - as long as they're released on GitHub, binstaller can generate installation scripts for them.
 
-## Features
+## 🔄 How it Works
 
-* **GoReleaser Integration**: Reads GoReleaser YAML files to create custom installation scripts
-* **Cross-Platform Support**: Works on various operating systems and architectures
-* **Checksum Verification**: Ensures the integrity of downloaded binaries
-* **GitHub Attestation Verification**: Verifies GitHub attestations to enhance security (new feature)
-* **Fast Installation**: Much faster than 'go get' (sometimes up to 100x)
+binstaller follows a simple two-step workflow:
 
-## Usage
-
-### Basic Usage
-
-```bash
-# Generate an installation script for a GitHub repository
-goinstaller --repo=owner/repo > install.sh
-
-# Generate an installation script from a local GoReleaser config
-goinstaller --file=.goreleaser.yml > install.sh
-
-# Generate an installation script with attestation verification
-goinstaller --repo=owner/repo --require-attestation > install.sh
+```mermaid
+graph LR
+    A[GoReleaser config<br/>.goreleaser.yml] --> C[.binstaller.yml<br/>Configuration file]
+    B[GitHub releases<br/>API detection] --> C
+    D[Aqua registry<br/>package.yaml] --> C
+    E[Manual editing<br/>Custom config] --> C
+    
+    C --> G[.binstaller.yml<br/>with embedded checksums]
+    C --> F[install.sh<br/>Installation script]
+    G --> F
+    
+    A -.-> |binst init| C
+    B -.-> |binst init| C
+    D -.-> |binst init| C
+    C -.-> |binst embed-checksums<br/>(optional)| G
+    C -.-> |binst gen| F
+    G -.-> |binst gen| F
+    
+    style C fill:#e1f5fe
+    style G fill:#fff3e0
+    style F fill:#f3e5f5
 ```
 
-### Example
+**Step 1:** `binst init` - Generate a `.binstaller.yml` config from various sources  
+**Step 2 (Optional):** `binst embed-checksums` - Embed checksums into the config for enhanced security  
+**Step 3:** `binst gen` - Generate the final installation script
 
-Let's say you are using [hugo](https://gohugo.io), the static website generator, with [travis-ci](https://travis-ci.org).
+## ✨ Key Features
 
-Your old `.travis.yml` file might have:
+* 🛡️ **Enhanced Security**: Optional checksum embedding for enhanced verification
+* 🔧 **Multiple Sources**: Support for GoReleaser, GitHub releases, and Aqua registry
+* 📦 **Flexible Configuration**: YAML-based `.binstaller.yml` configuration files
+* 🎯 **Cross-Platform**: Works across Linux, macOS, Windows, and other Unix-like systems
+* ⚡ **Fast Installation**: Dramatically faster than `go install` (up to 100x improvement)
+* 🔁 **Reproducible Builds**: Generate consistent installation scripts with source traceability
+* 🌐 **Universal Support**: Works with any static binary on GitHub releases (Go, Rust, C++, etc.)
 
-```yaml
-install:
-  - go get github.com/gohugoio/hugo
-```
+## 🚀 Quick Start
 
-This can take up to 30 seconds!
-
-With goinstaller, you can create a script:
-
-```bash
-# create an installer script
-goinstaller --repo=gohugoio/hugo > ./goinstaller-hugo.sh
-```
-
-Add `goinstaller-hugo.sh` to your GitHub repo and edit your `.travis.yml`:
-
-```yaml
-install:
-  - ./goinstaller-hugo.sh v0.37.1
-```
-
-Without a version number, GitHub is queried to get the latest version number:
-
-```yaml
-install:
-  - ./goinstaller-hugo.sh
-```
-
-Typical download time is 0.3 seconds, or 100x improvement.
-
-Your new `hugo` binary is in `./bin`, so change your Makefile or scripts to use `./bin/hugo`.
-
-The default installation directory can be changed with the `-b` flag or the `BINDIR` environment variable.
-
-## Installation
+### Installation
 
 ```bash
 # Install the latest version
-go install github.com/haya14busa/goinstaller@latest
+go install github.com/haya14busa/binstaller/cmd/binst@latest
 
-# Or install a specific version
-go install github.com/haya14busa/goinstaller@v0.1.0
+# Or download from GitHub releases
+curl -sfL https://raw.githubusercontent.com/haya14busa/binstaller/main/install.sh | sh
 ```
 
-## Differences from Original GoDownloader
+### Basic Usage
 
-goinstaller is a streamlined fork of GoDownloader with the following changes:
+The workflow in action:
 
-* Removed support for Equinox.io
-* Removed support for "naked" releases on GitHub
-* Removed tree walking functionality
-* Added GitHub attestation verification
-* Enhanced security features
-* Improved code structure and maintainability
+```bash
+# Step 1: Initialize configuration from a source
+binst init --source=github --repo=owner/repo -o .binstaller.yml
 
-## License
+# Step 2 (Optional): Embed checksums for enhanced security
+binst embed-checksums --config .binstaller.yml
+
+# Step 3: Generate installation script
+binst gen -o install.sh
+
+# Or without embedded checksums
+binst init --source=goreleaser --file=.goreleaser.yml | binst gen > install.sh
+```
+
+## 📖 Usage Examples
+
+### From GoReleaser Configuration
+
+```bash
+# Step 1: Extract config from GoReleaser YAML
+binst init --source=goreleaser --file=.goreleaser.yml -o .binstaller.yml
+
+# Step 2 (Optional): Embed checksums for enhanced security
+binst embed-checksums --config .binstaller.yml
+
+# Step 3: Generate installer script
+binst gen --config=.binstaller.yml -o install.sh
+```
+
+### From GitHub Repository
+
+```bash
+# Step 1: Auto-detect from GitHub releases API
+binst init --source=github --repo=junegunn/fzf -o fzf.binstaller.yml
+
+# Step 2 (Optional): Embed checksums for enhanced security
+binst embed-checksums --config fzf.binstaller.yml
+
+# Step 3: Generate installer
+binst gen --config=fzf.binstaller.yml -o fzf-install.sh
+```
+
+### From Aqua Registry
+
+```bash
+# Step 1: Convert from Aqua package definition
+binst init --source=aqua --repo=aquaproj/aqua-registry --file=pkgs/g/golangci-lint.yaml -o golangci-lint.binstaller.yml
+
+# Step 2 (Optional): Embed checksums for enhanced security
+binst embed-checksums --config golangci-lint.binstaller.yml
+
+# Step 3: Generate installer
+binst gen --config=golangci-lint.binstaller.yml -o golangci-lint-install.sh
+```
+
+### Manual Configuration
+
+```bash
+# Step 1: Create or edit .binstaller.yml manually
+vim .binstaller.yml
+
+# Step 2 (Optional): Embed checksums for enhanced security
+binst embed-checksums --config .binstaller.yml
+
+# Step 3: Generate installer script
+binst gen -o install.sh
+```
+
+## ⚙️ Configuration Format
+
+The `.binstaller.yml` configuration file uses a simple, declarative format:
+
+```yaml
+schema: v1
+name: fzf
+repo: junegunn/fzf
+default_version: latest
+asset:
+  template: ${NAME}-${VERSION}-${OS}_${ARCH}${EXT}
+  default_extension: .tar.gz
+  rules:
+    - when:
+        os: windows
+      ext: .zip
+checksums:
+  template: ${NAME}_${VERSION}_checksums.txt
+  algorithm: sha256
+supported_platforms:
+  - os: linux
+    arch: amd64
+  - os: darwin
+    arch: amd64
+  - os: windows
+    arch: amd64
+```
+
+## 🔧 Advanced Features
+
+### Security Features
+
+* **Optional Embedded Checksums**: Use `binst embed-checksums` to embed checksums directly into the configuration for enhanced security
+* **Automatic Verification**: When checksums are embedded, downloaded binaries are automatically verified
+* **Reproducible Scripts**: Generated scripts are deterministic and traceable
+* **Flexible Security**: Choose between external checksum files or embedded checksums based on your needs
+
+*Future planned features*: SLSA attestation verification for enhanced supply chain security
+
+### CI/CD Integration
+
+Perfect for CI/CD pipelines where you need fast, reliable binary installations:
+
+```yaml
+# GitHub Actions example
+- name: Install tool
+  run: |
+    curl -sfL https://raw.githubusercontent.com/your-org/your-tool/main/install.sh | sh
+    echo "./bin" >> $GITHUB_PATH
+```
+
+### Custom Asset Patterns
+
+Support for complex release asset naming patterns:
+
+```yaml
+asset:
+  template: ${NAME}_${VERSION}_${OS}_${ARCH}${EXT}
+  rules:
+    - when:
+        os: darwin
+      template: ${NAME}_${VERSION}_Darwin_${ARCH}${EXT}
+    - when:
+        os: windows
+      ext: .zip
+```
+
+## 🎯 Why binstaller?
+
+binstaller provides a modern, secure approach to binary installation:
+
+* **Universal Support**: Unlike tools focused only on Go, works with any static binary on GitHub
+* **Enhanced Security**: Embedded checksums provide better security than traditional approaches
+* **Flexible Configuration**: YAML-based configuration is more maintainable than command-line flags
+* **Active Development**: Continuously maintained and improved
+
+## 📚 Documentation
+
+For detailed documentation, check the `docs/` directory in the repository:
+
+* Configuration format and examples in `testdata/` directory
+* Design documents in `docs/design/`
+* Security considerations in `docs/security.md`
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see our [Contributing Guide](docs/contributing.md) for details.
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-* Original [GoDownloader](https://github.com/goreleaser/godownloader) project
-* [GoReleaser](https://github.com/goreleaser/goreleaser) team
+* Original [GoDownloader](https://github.com/goreleaser/godownloader) project by the GoReleaser team
+* [Aqua](https://aquaproj.github.io/) project for package management inspiration
+* All contributors who have helped improve this project

@@ -4,6 +4,13 @@ TEST_OPTIONS?=
 OS=$(shell uname -s)
 LDFLAGS=-ldflags "-X main.version=$(shell git describe --tags --always --dirty || echo dev) -X main.commit=$(shell git rev-parse HEAD || echo none)"
 
+# Test data files
+GO_SOURCES := $(shell find . -name '*.go' -not -path './vendor/*')
+SHELL_TEMPLATES := internal/shell/*.sh internal/shell/*.tmpl.sh
+TESTDATA_DIR := testdata
+BINSTALLER_CONFIGS := $(wildcard $(TESTDATA_DIR)/*.binstaller.yml)
+INSTALL_SCRIPTS := $(BINSTALLER_CONFIGS:.binstaller.yml=.install.sh)
+
 export PATH := ./bin:$(PATH)
 export GO111MODULE := on
 # enable consistent Go 1.12/1.13 GOPROXY behavior.
@@ -51,13 +58,71 @@ ci: build test lint ## travis-ci entrypoint
 build: ## Build a beta version of binstaller
 	go build $(LDFLAGS) ./cmd/binst
 
+# Binary with dependency tracking (includes embedded shell templates)
+binst: $(GO_SOURCES) $(SHELL_TEMPLATES) go.mod go.sum
+	@echo "Building binst binary..."
+	go build $(LDFLAGS) -o binst ./cmd/binst
+
+# Install script generation with incremental builds
+$(TESTDATA_DIR)/%.install.sh: $(TESTDATA_DIR)/%.binstaller.yml binst
+	@echo "Generating installer for $*..."
+	./binst gen --config $< -o $@
+
+# Test targets
+test-gen-configs: binst ## Generate test configuration files
+	@echo "Generating test configurations..."
+	@./test/gen_config.sh
+
+test-gen-installers: $(INSTALL_SCRIPTS) ## Generate installer scripts (incremental)
+	@echo "Generated installer scripts"
+
+# Test execution with timestamp tracking
+.testdata-timestamp:
+	@touch .testdata-timestamp
+
+test-run-installers: ## Run all installer scripts in parallel
+	@echo "Running installer scripts..."
+	@./test/run_installers.sh
+	@touch .testdata-timestamp
+
+test-run-installers-incremental: .testdata-timestamp $(INSTALL_SCRIPTS) ## Run only changed installer scripts
+	@echo "Running incremental installer tests..."
+	@CHANGED_SCRIPTS=$$(find $(TESTDATA_DIR) -name "*.install.sh" -newer .testdata-timestamp 2>/dev/null || echo ""); \
+	if [ -n "$$CHANGED_SCRIPTS" ]; then \
+		echo "Testing changed installers: $$CHANGED_SCRIPTS"; \
+		TMPDIR=$$(mktemp -d); \
+		trap 'rm -rf -- "$$TMPDIR"' EXIT HUP INT TERM; \
+		echo "$$CHANGED_SCRIPTS" | tr ' ' '\n' | rush -j5 -k "{} -b $$TMPDIR"; \
+	else \
+		echo "No installer scripts have changed since last test"; \
+	fi
+	@touch .testdata-timestamp
+
+test-aqua-source: binst ## Test aqua registry source integration
+	@echo "Testing aqua source..."
+	@./test/aqua_source.sh
+
+test-all-platforms: binst ## Test reviewdog installer across all supported platforms
+	@echo "Testing all supported platforms..."
+	@./test/all-supported-platforms-reviewdog.sh
+
+test-integration: test-gen-configs test-gen-installers test-run-installers ## Run full integration test suite
+	@echo "Integration tests completed"
+
+test-incremental: test-gen-installers test-run-installers-incremental ## Run incremental tests (only changed files)
+	@echo "Incremental tests completed"
+
+test-clean: ## Clean up test artifacts
+	@echo "Cleaning test artifacts..."
+	@rm -f $(TESTDATA_DIR)/*.install.sh .testdata-timestamp
+
 .DEFAULT_GOAL := build
 
-.PHONY: ci help clean
+.PHONY: ci help clean test-gen-configs test-gen-installers test-run-installers test-run-installers-incremental test-aqua-source test-all-platforms test-integration test-incremental test-clean
 
 clean: ## clean up everything
 	go clean ./...
-	rm -f binstaller
+	rm -f binstaller binst
 	rm -rf ./bin ./dist ./vendor
 	git gc --aggressive
 

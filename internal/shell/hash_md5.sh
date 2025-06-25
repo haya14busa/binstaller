@@ -14,7 +14,3 @@ hash_md5() {
 hash_compute() {
   hash_md5 "$1"
 }
-
-hash_verify() {
-  hash_verify_internal "$1" "$2" hash_md5
-}

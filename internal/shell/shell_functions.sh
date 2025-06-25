@@ -48,19 +48,15 @@ extract_hash() {
   grep -E "([[:space:]]|/|\*)${BASENAME}$" "${checksums}" 2>/dev/null | tr '\t' ' ' | cut -d ' ' -f 1
 }
 
-hash_verify_internal() {
+
+hash_verify() {
   TARGET_PATH=$1
   SUMFILE=$2
-  HASH_FUNC=$3
   if [ -z "${SUMFILE}" ]; then
-    log_err "hash_verify_internal checksum file not specified in arg2"
+    log_err "hash_verify checksum file not specified in arg2"
     return 1
   fi
-  if [ -z "${HASH_FUNC}" ]; then
-    log_err "hash_verify_internal hash func not specified in arg3"
-    return 1
-  fi
-  got=$($HASH_FUNC "$TARGET_PATH")
+  got=$(hash_compute "$TARGET_PATH")
   if [ -z "${got}" ]; then
     log_err "failed to calculate hash: ${TARGET_PATH}"
     return 1

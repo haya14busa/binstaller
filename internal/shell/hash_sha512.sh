@@ -21,7 +21,3 @@ hash_sha512() {
 hash_compute() {
   hash_sha512 "$1"
 }
-
-hash_verify() {
-  hash_verify_internal "$1" "$2" hash_sha512
-}

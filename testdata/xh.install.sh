@@ -223,8 +223,8 @@ hash_sha256() {
   fi
 }
 
-hash_verify() {
-  hash_verify_internal "$1" "$2" hash_sha256
+hash_compute() {
+  hash_sha256 "$1"
 }
 
 
@@ -278,19 +278,15 @@ extract_hash() {
   grep -E "([[:space:]]|/|\*)${BASENAME}$" "${checksums}" 2>/dev/null | tr '\t' ' ' | cut -d ' ' -f 1
 }
 
-hash_verify_internal() {
+
+hash_verify() {
   TARGET_PATH=$1
   SUMFILE=$2
-  HASH_FUNC=$3
   if [ -z "${SUMFILE}" ]; then
-    log_err "hash_verify_internal checksum file not specified in arg2"
+    log_err "hash_verify checksum file not specified in arg2"
     return 1
   fi
-  if [ -z "${HASH_FUNC}" ]; then
-    log_err "hash_verify_internal hash func not specified in arg3"
-    return 1
-  fi
-  got=$($HASH_FUNC "$TARGET_PATH")
+  got=$(hash_compute "$TARGET_PATH")
   if [ -z "${got}" ]; then
     log_err "failed to calculate hash: ${TARGET_PATH}"
     return 1
@@ -307,6 +303,16 @@ hash_verify_internal() {
   fi
 }
 
+
+# --- Embedded Checksums (Format: VERSION:FILENAME:HASH) ---
+EMBEDDED_CHECKSUMS=""
+
+# Find embedded checksum for a given version and filename
+find_embedded_checksum() {
+  version="$1"
+  filename="$2"
+  echo "$EMBEDDED_CHECKSUMS" | grep -E "^${version}:${filename}:" | cut -d':' -f3
+}
 
 parse_args() {
   BINDIR="${BINSTALLER_BIN:-${HOME}/.local/bin}"
@@ -403,14 +409,29 @@ execute() {
   log_info "Downloading ${ASSET_URL}"
   http_download "${TMPDIR}/${ASSET_FILENAME}" "${ASSET_URL}"
 
-  if [ -n "$CHECKSUM_URL" ]; then
-    # Download checksum file
+  # Try to find embedded checksum first
+  EMBEDDED_HASH=$(find_embedded_checksum "$VERSION" "$ASSET_FILENAME")
+
+  if [ -n "$EMBEDDED_HASH" ]; then
+    log_info "Using embedded checksum for verification"
+    
+    # Verify using embedded hash
+    got=$(hash_compute "${TMPDIR}/${ASSET_FILENAME}")
+    if [ "$got" != "$EMBEDDED_HASH" ]; then
+      log_crit "Checksum verification failed for ${ASSET_FILENAME}"
+      log_crit "Expected: ${EMBEDDED_HASH}"
+      log_crit "Got: ${got}"
+      return 1
+    fi
+    log_info "Checksum verification successful"
+  elif [ -n "$CHECKSUM_URL" ]; then
+    # Fall back to downloading checksum file
     log_info "Downloading checksums from ${CHECKSUM_URL}"
     http_download "${TMPDIR}/${CHECKSUM_FILENAME}" "${CHECKSUM_URL}"
     log_info "Verifying checksum ..."
     hash_verify "${TMPDIR}/${ASSET_FILENAME}" "${TMPDIR}/${CHECKSUM_FILENAME}"
   else
-    log_info "No checksum URL or embedded hash found, skipping verification."
+    log_info "No checksum found, skipping verification."
   fi
 
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then

@@ -3,6 +3,7 @@ package shell
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/haya14busa/goinstaller/pkg/spec"
@@ -91,6 +92,9 @@ func createFuncMap() template.FuncMap {
 				}
 			}
 			return false
+		},
+		"trimPrefix": func(s, prefix string) string {
+			return strings.TrimPrefix(s, prefix)
 		},
 	}
 }

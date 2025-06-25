@@ -67,16 +67,15 @@ type ArchEmulation struct {
 
 // ChecksumConfig defines how to verify checksums.
 type ChecksumConfig struct {
-	Template          string                        `yaml:"template"`                     // Checksum filename template
 	Algorithm         string                        `yaml:"algorithm,omitempty"`          // Default: "sha256"
+	Template          string                        `yaml:"template,omitempty"`           // Checksum filename template
 	EmbeddedChecksums map[string][]EmbeddedChecksum `yaml:"embedded_checksums,omitempty"` // Keyed by version string
 }
 
 // EmbeddedChecksum holds pre-verified checksum information.
 type EmbeddedChecksum struct {
-	Filename  string `yaml:"filename"`            // Asset filename
-	Hash      string `yaml:"hash"`                // Checksum hash
-	Algorithm string `yaml:"algorithm,omitempty"` // Optional override
+	Filename string `yaml:"filename"` // Asset filename
+	Hash     string `yaml:"hash"`     // Checksum hash
 }
 
 // AttestationConfig defines settings for attestation verification.
@@ -131,14 +130,6 @@ func (s *InstallSpec) SetDefaults() {
 	if s.Checksums != nil {
 		if s.Checksums.Algorithm == "" {
 			s.Checksums.Algorithm = "sha256"
-		}
-		for version, checksums := range s.Checksums.EmbeddedChecksums {
-			for i := range checksums {
-				if checksums[i].Algorithm == "" {
-					checksums[i].Algorithm = s.Checksums.Algorithm
-				}
-			}
-			s.Checksums.EmbeddedChecksums[version] = checksums // Assign back if modified
 		}
 	}
 	if s.Attestation != nil {

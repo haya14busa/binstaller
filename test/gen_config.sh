@@ -28,5 +28,9 @@ set -e
 ./binst init --source github --repo haya14busa/bump --output=testdata/bump.binstaller.yml
 # Test default bin dir with yq modification
 ./binst init --source github --repo charmbracelet/gum --output=testdata/gum.binstaller.yml
+echo '# --- manually added ---' >> testdata/gum.binstaller.yml
 yq -i '.unpack.strip_components = 1' testdata/gum.binstaller.yml
 yq -i '.default_bindir = "./bin"' testdata/gum.binstaller.yml
+yq -i '.default_version = "v0.16.0"' testdata/gum.binstaller.yml
+./binst embed-checksums -c ./testdata/gum.binstaller.yml -m download --version v0.15.0
+./binst embed-checksums -c ./testdata/gum.binstaller.yml -m download --version v0.16.0

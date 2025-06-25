@@ -152,8 +152,9 @@ func TestAquaRegistryAdapter_Checksums(t *testing.T) {
 	if installSpec.Checksums == nil {
 		t.Fatal("Checksums: got nil, want non-nil")
 	}
-	if installSpec.Checksums.Template != "gh_${TAG}_${OS}_${ARCH}.tar.gz.sha256" {
-		t.Errorf("Checksums.Template: got %q, want %q", installSpec.Checksums.Template, "gh_${TAG}_${OS}_${ARCH}.tar.gz.sha256")
+	want := "gh_${TAG}_${OS}_${ARCH}.sha256"
+	if installSpec.Checksums.Template != want {
+		t.Errorf("Checksums.Template: got %q, want %q", installSpec.Checksums.Template, want)
 	}
 	if installSpec.Checksums.Algorithm != "sha256" {
 		t.Errorf("Checksums.Algorithm: got %q, want %q", installSpec.Checksums.Algorithm, "sha256")
@@ -171,8 +172,9 @@ func TestAquaRegistryAdapter_Checksums_TemplateWithAsset(t *testing.T) {
 func TestAquaRegistryAdapter_Binaries(t *testing.T) {
 	installSpec := newTestInstallSpec(t)
 	binaries := installSpec.Asset.Binaries
-	if len(binaries) != 1 || binaries[0].Name != "gh" || binaries[0].Path != "gh_${TAG}_${OS}_${ARCH}.tar.gz_bin" {
-		t.Errorf("Asset.Binaries: got %+v, want [{Name: \"gh\", Path: \"gh_${TAG}_${OS}_${ARCH}.tar.gz_bin\"}]", binaries)
+	wantPath := "gh_${TAG}_${OS}_${ARCH}_bin"
+	if len(binaries) != 1 || binaries[0].Name != "gh" || binaries[0].Path != wantPath {
+		t.Errorf("Asset.Binaries: got %+v, want [{Name: \"gh\", Path: %q}]", binaries, wantPath)
 	}
 }
 
@@ -210,12 +212,12 @@ func newTestInstallSpecWithAssetWithoutExt(t *testing.T) *spec.InstallSpec {
 
 func TestAquaRegistryAdapter_AssetWithoutExt(t *testing.T) {
 	installSpec := newTestInstallSpecWithAssetWithoutExt(t)
-	wantChecksum := "gh_${TAG}_${OS}_${ARCH}.tar.gz.sha256"
+	wantChecksum := "gh_${TAG}_${OS}_${ARCH}.sha256"
 	if installSpec.Checksums.Template != wantChecksum {
 		t.Errorf("Checksums.Template: got %q, want %q", installSpec.Checksums.Template, wantChecksum)
 	}
 	binaries := installSpec.Asset.Binaries
-	wantBinaryPath := "gh_${TAG}_${OS}_${ARCH}.tar.gz_bin"
+	wantBinaryPath := "gh_${TAG}_${OS}_${ARCH}_bin"
 	if len(binaries) != 1 || binaries[0].Path != wantBinaryPath {
 		t.Errorf("Asset.Binaries[0].Path: got %q, want %q", binaries[0].Path, wantBinaryPath)
 	}

@@ -10,5 +10,5 @@ asset:
         - name: kubectl-auth_proxy
           path: kauthproxy
 checksums:
-    template: ${ASSET_FILENAME}.sha256
     algorithm: sha256
+    template: ${ASSET_FILENAME}.sha256

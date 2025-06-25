@@ -26,6 +26,23 @@ EOF
 
 {{ .ShellFunctions }}
 
+# --- Embedded Checksums (Format: VERSION:FILENAME:HASH) ---
+EMBEDDED_CHECKSUMS="
+{{- if .Checksums -}}
+{{- range $version, $checksums := .Checksums.EmbeddedChecksums }}
+{{- range $checksum := $checksums }}
+{{ trimPrefix $version "v" }}:{{ $checksum.Filename }}:{{ $checksum.Hash }}
+{{- end }}
+{{- end }}
+{{- end }}"
+
+# Find embedded checksum for a given version and filename
+find_embedded_checksum() {
+  version="$1"
+  filename="$2"
+  echo "$EMBEDDED_CHECKSUMS" | grep -E "^${version}:${filename}:" | cut -d':' -f3
+}
+
 parse_args() {
   BINDIR="{{ .DefaultBinDir }}"
   while getopts "b:dqh?x" arg; do
@@ -126,14 +143,29 @@ execute() {
   log_info "Downloading ${ASSET_URL}"
   http_download "${TMPDIR}/${ASSET_FILENAME}" "${ASSET_URL}"
 
-  if [ -n "$CHECKSUM_URL" ]; then
-    # Download checksum file
+  # Try to find embedded checksum first
+  EMBEDDED_HASH=$(find_embedded_checksum "$VERSION" "$ASSET_FILENAME")
+
+  if [ -n "$EMBEDDED_HASH" ]; then
+    log_info "Using embedded checksum for verification"
+    
+    # Verify using embedded hash
+    got=$(hash_compute "${TMPDIR}/${ASSET_FILENAME}")
+    if [ "$got" != "$EMBEDDED_HASH" ]; then
+      log_crit "Checksum verification failed for ${ASSET_FILENAME}"
+      log_crit "Expected: ${EMBEDDED_HASH}"
+      log_crit "Got: ${got}"
+      return 1
+    fi
+    log_info "Checksum verification successful"
+  elif [ -n "$CHECKSUM_URL" ]; then
+    # Fall back to downloading checksum file
     log_info "Downloading checksums from ${CHECKSUM_URL}"
     http_download "${TMPDIR}/${CHECKSUM_FILENAME}" "${CHECKSUM_URL}"
     log_info "Verifying checksum ..."
     hash_verify "${TMPDIR}/${ASSET_FILENAME}" "${TMPDIR}/${CHECKSUM_FILENAME}"
   else
-    log_info "No checksum URL or embedded hash found, skipping verification."
+    log_info "No checksum found, skipping verification."
   fi
 
   if [ -z "${EXT}" ] || [ "${EXT}" = ".exe" ]; then

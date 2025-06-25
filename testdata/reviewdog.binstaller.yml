@@ -15,8 +15,8 @@ asset:
         os: titlecase
         arch: lowercase
 checksums:
-    template: checksums.txt
     algorithm: sha256
+    template: checksums.txt
 supported_platforms:
     - os: darwin
       arch: amd64
